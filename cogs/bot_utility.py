@@ -57,9 +57,13 @@ class BotUtility(commands.Cog):
         duration = (end - start) * 1000
         await message.edit(content=f'Pong! {duration:.2f}ms')
 
-    @commands.command()
+    @commands.group(invoke_without_command=True)
     async def test(self, ctx, *, arg1):
-        print(arg1)
+        await ctx.send('group yes')
+
+    @test.command()
+    async def add(self, ctx):
+        await ctx.send('subcommand yes')
 
 
 async def setup(bot):

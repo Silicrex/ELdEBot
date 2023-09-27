@@ -10,11 +10,11 @@ def get_enchant_data(enchant_name):
     enchant = enchants[enchant_name]
     best_level = enchant['best_level']
     best_rate = enchant['best_rate']
-    res = [f"**[{enchant_name.title()} {best_level['level']}]** "
+    res = [f"**[{string.capwords(enchant_name)} {best_level['level']}]** "
            f"{best_level['cost']}{EMS} --> **{best_level['villager_name']}**"]
     if not enchant['best_level']['level'] == enchant['best_rate']['level']:  # Highest-level enchant is also best rate
         scaled_cost = int(get_rate(best_rate['level'], best_rate['cost']) * get_lv1(best_level['level']))
-        print(f" || best rate: **[{enchant_name.title()} {best_rate['level']}]** "
+        print(f" || best rate: **[{string.capwords(enchant_name)} {best_rate['level']}]** "
               f"{best_rate['cost']}{EMS} <Scaled {scaled_cost}{EMS}> --> **{best_rate['villager_name']}**")
     return ''.join(res)
 
@@ -68,18 +68,18 @@ def check_best_level(enchant_name, level, cost, *, print_mode=True):
     best_level = enchants[enchant_name]['best_level']
     if level > best_level['level']:
         if print_mode:
-            return f"! **[{enchant_name.title()} {level}]** is a new highest level! " \
-                   f"(prev: **[{enchant_name.title()} {best_level['level']}]**)\n"
+            return f"! **[{string.capwords(enchant_name)} {level}]** is a new highest level! " \
+                   f"(prev: **[{string.capwords(enchant_name)} {best_level['level']}]**)\n"
         return True
     elif level == best_level['level'] and get_rate(level, cost) < get_rate(best_level['level'], best_level['cost']):
         if print_mode:
-            return f"~! **[{enchant_name.title()} {level}]** is not a higher level but is a " \
+            return f"~! **[{string.capwords(enchant_name)} {level}]** is not a higher level but is a " \
                    f"better rate for the best level @ {cost}{EMS} compared to prev @ {best_level['cost']}{EMS}\n"
         return True
     else:
         if print_mode:
-            return f"**[{enchant_name.title()} {level}]** is not a higher level " \
-                   f"(cur: **[{enchant_name.title()} {best_level['level']}]**)\n"
+            return f"**[{string.capwords(enchant_name)} {level}]** is not a higher level " \
+                   f"(cur: **[{string.capwords(enchant_name)} {best_level['level']}]**)\n"
         return False
 
 
@@ -93,27 +93,27 @@ def check_best_rate(enchant_name, level, cost, *, print_mode=True):
     res = []
     if new_cost < cur_cost:
         if print_mode:
-            res.append(f"! **[{enchant_name.title()} {level}]** {cost}{EMS} is a new best rate! " 
-                       f"(prev: **[{enchant_name.title()} {best_rate['level']}]** {best_rate['cost']}{EMS})")
+            res.append(f"! **[{string.capwords(enchant_name)} {level}]** {cost}{EMS} is a new best rate! " 
+                       f"(prev: **[{string.capwords(enchant_name)} {best_rate['level']}]** {best_rate['cost']}{EMS})")
             if scaling:
                 res.append(f" <Scaled> (prev {cur_cost}{EMS}) vs (new {new_cost}{EMS}) for "
-                           f"**[{enchant_name.title()} {highest_level}]**")
+                           f"**[{string.capwords(enchant_name)} {highest_level}]**")
             res.append('\n')
             return ''.join(res)
         return True
     elif new_cost == cur_cost and level > best_rate['level']:
         if print_mode:
-            return f"~! **[{enchant_name.title()} {level}]** {cost}{EMS} is not a better rate but is a " \
+            return f"~! **[{string.capwords(enchant_name)} {level}]** {cost}{EMS} is not a better rate but is a " \
                    f"better level for the best rate compared to prev of " \
-                   f"**[{enchant_name.title()} {best_rate['level']}]**"
+                   f"**[{string.capwords(enchant_name)} {best_rate['level']}]**"
         return True
     else:
         if print_mode:
-            res.append(f"(([{enchant_name.title()} {level}]** {cost}{EMS} is not a better rate "
-                       f"(cur: **[{enchant_name.title()} {best_rate['level']}]** {best_rate['cost']}{EMS})")
+            res.append(f"(([{string.capwords(enchant_name)} {level}]** {cost}{EMS} is not a better rate "
+                       f"(cur: **[{string.capwords(enchant_name)} {best_rate['level']}]** {best_rate['cost']}{EMS})")
             if scaling:
                 res.append(f" <Scaled> (cur {cur_cost}{EMS}) vs (new {new_cost}{EMS}) for "
-                           f"**[{enchant_name.title()} {highest_level}]**")
+                           f"**[{string.capwords(enchant_name)} {highest_level}]**")
             res.append('\n')
             return ''.join(res)
         return False

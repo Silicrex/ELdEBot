@@ -9,7 +9,7 @@ import json
 
 def load_data():
     if not Path('cogs/villagers/data.json').is_file():
-        template = {'enchants': {}, 'villagers': {}}
+        template = {'enchants': {}, 'villagers': {}, 'priority': []}
         with open('cogs/villagers/data.json', 'w') as file:
             json.dump(template, file, indent=4)
         return template

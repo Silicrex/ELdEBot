@@ -1,3 +1,4 @@
+import string
 from discord.ext import commands
 from .data import DB, save
 from .helpers import get_enchant_data, get_enchant_name, get_enchant_list, check_best_level, check_best_rate, \
@@ -25,7 +26,8 @@ class Villagers(commands.Cog):
                        '- villagers\n'
                        '- add <villager name>, <cost1 enchant1>, <c2 e2>, <c3 e3>\n'
                        '- rename <villager name>, <new villager name>\n'
-                       '- remove <villager name>')
+                       '- remove <villager name>\n'
+                       '- priority (add/remove <enchant_name>)')
 
     @commands.command(aliases=['enchants'])
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
@@ -43,7 +45,7 @@ class Villagers(commands.Cog):
 
     @commands.command()
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.guild)
-    async def find(self, ctx, *, text):
+    async def find(self, ctx, *, text: str.lower):
         # ex: find ash destroyer
         args = text.split()
         if not (enchant_name := get_enchant_name(args)):
@@ -64,7 +66,7 @@ class Villagers(commands.Cog):
 
     @commands.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
-    async def check(self, ctx, *, text):
+    async def check(self, ctx, *, text: str.lower):
         # ex: check 10 fire aspect 2, 30 education 3
         args = text.split()
         enchants = DB['enchants']
@@ -81,7 +83,7 @@ class Villagers(commands.Cog):
             level = enchant_data['level']
             cost = enchant_data['cost']
             if enchant_name not in enchants:
-                res.append(f'**[{enchant_name.title()} {level}]** is a new enchant!\n\n')
+                res.append(f'**[{string.capwords(enchant_name)} {level}]** is a new enchant!\n\n')
                 continue
             res.append(check_best_level(enchant_name, level, cost))
             res.append(check_best_rate(enchant_name, level, cost))
@@ -126,13 +128,13 @@ class Villagers(commands.Cog):
                     text = '(LEVEL)'
                 else:
                     text = '(RATE)'
-                tags.append(f"**[{full_enchant_name.title()}]** {data[full_enchant_name]['cost']}{EMS} {text}")
+                tags.append(f"**[{string.capwords(full_enchant_name)}]** {data[full_enchant_name]['cost']}{EMS} {text}")
             res.append(', '.join(tags) + '\n')
         await ctx.send(''.join(res))
 
     @commands.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
-    async def add(self, ctx, *, text):
+    async def add(self, ctx, *, text: str.lower):
         # ex: add bob, 10 ash destroyer, 5 mending, 7 supreme sharpness 5
         # Names are forced lowercase, enchant names are automatically adjusted during print
 
@@ -182,7 +184,7 @@ class Villagers(commands.Cog):
 
             # New enchant
             if enchant_name not in enchants:
-                res.append(f"**[{enchant_name.title()} {level}]** is a new enchant!\n\n")
+                res.append(f"**[{string.capwords(enchant_name)} {level}]** is a new enchant!\n\n")
                 new_enchant = True
                 enchants.update({enchant_name: {
                     'best_level': {'villager_name': villager_name, 'level': level, 'cost': cost},
@@ -221,7 +223,7 @@ class Villagers(commands.Cog):
 
     @commands.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
-    async def rename(self, ctx, *, text):
+    async def rename(self, ctx, *, text: str.lower):
         args = text.split()
         villagers = DB['villagers']
         enchants = DB['enchants']
@@ -253,7 +255,7 @@ class Villagers(commands.Cog):
 
     @commands.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
-    async def remove(self, ctx, *, text):
+    async def remove(self, ctx, *, text: str.lower):
         args = text.split()
         res = []
         villager_name = ' '.join(args)
@@ -276,13 +278,14 @@ class Villagers(commands.Cog):
             if data['is_best_level']:
                 if not (level_res := get_enchant_best_level(other_villager_names, enchant_name)):
                     enchants.pop(enchant_name)  # No villager with this enchant is left
-                    res.append(f"Removed **[{enchant_name.title()}]** as no other villager found with it\n")
+                    res.append(f"Removed **[{string.capwords(enchant_name)}]** as no other villager found with it\n")
                     continue
                 enchants[enchant_name]['best_level'] = level_res
                 new_villager_name = level_res['villager_name']
                 new_full_enchant_name = f"{enchant_name} {level_res['level']}"
                 villagers[new_villager_name][new_full_enchant_name]['is_best_level'] = True
-                res.append(f"Replaced best level of **[{full_enchant_name.title()}]** with **[{enchant_name.title()} "
+                res.append(f"Replaced best level of **[{string.capwords(full_enchant_name)}]** with "
+                           f"**[{string.capwords(enchant_name)} "
                            f"{level_res['level']}]** {level_res['cost']}{EMS} --> "
                            f"**{level_res['villager_name']}**\n")
             if data['is_best_rate']:
@@ -291,9 +294,59 @@ class Villagers(commands.Cog):
                 new_full_enchant_name = f"{enchant_name} {rate_res['level']}"
                 villagers[new_villager_name][new_full_enchant_name]['is_best_rate'] = True
                 enchants[enchant_name]['best_rate'] = rate_res
-                res.append(f"Replaced best rate of **[{enchant_name.title()}]** with **[{enchant_name.title()} "
+                res.append(f"Replaced best rate of **[{string.capwords(enchant_name)}]** with "
+                           f"**[{string.capwords(enchant_name)} "
                            f"{rate_res['level']}]** {rate_res['cost']}{EMS} --> **{rate_res['villager_name']}**\n")
         villagers.pop(villager_name)
         res.append(f'Successfully deleted **{villager_name}**\n')
         save()
         await ctx.send(''.join(res))
+
+    @commands.group(invoke_without_command=True, aliases=['p', 'prio'])
+    async def priority(self, ctx):
+        enchants = DB['enchants']
+        priority = DB['priority']
+        if not enchants:
+            await ctx.send('There are no enchants')
+            return
+        res = []
+        for enchant_name in enchants:
+            if enchant_name in priority:
+                res.append(get_enchant_data(enchant_name))
+        if res:
+            res.insert(0, '**Priority Enchants Owned:**')
+            await ctx.send('\n'.join(res))
+        else:
+            await ctx.send('No priority enchants owned')
+
+    @priority.command(name='list')
+    async def priority_list(self, ctx):
+        priority = DB['priority']
+        body = '\n'.join(priority)
+        await ctx.send(f'**Priority Enchant List:**\n{body}')
+
+    @priority.command(name='add')
+    async def priority_add(self, ctx, *, text: str.lower):
+        if not all([c.isalpha() or c.isspace() or c == "'" for c in text]):
+            await ctx.send('Invalid input (note priority enchants do not take level)')
+            return
+        priority = DB['priority']
+        if text in priority:
+            await ctx.send('That item is already on the list')
+            return
+        priority.append(text)
+        save()
+        await ctx.send('Successfully added item to priority list')
+
+    @priority.command(name='remove')
+    async def priority_remove(self, ctx, *, text: str.lower):
+        if not all([c.isalpha() or c.isspace() or c == "'" for c in text]):
+            await ctx.send('Invalid input (note priority enchants do not take level)')
+            return
+        priority = DB['priority']
+        if text not in priority:
+            await ctx.send('That item is not on the list')
+            return
+        priority.remove(text)
+        save()
+        await ctx.send('Successfully removed item from priority list')
