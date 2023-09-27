@@ -1,6 +1,8 @@
+import string
 from .data import DB
 
 EMS = '<:emerald:1156624279857811457>'
+VALID_CHARS = set(string.ascii_letters + string.digits + " '")
 
 
 def get_enchant_data(enchant_name):
@@ -45,7 +47,7 @@ def get_enchant_list(input_list):
             return False
         cost = int(split[0])
         enchant_name = get_enchant_name(split[1:])
-        if not enchant_name.replace(' ', '').isalnum():
+        if not all([c in VALID_CHARS for c in enchant_name]):
             return False
         level = get_enchant_level(split[1:])
         enchant_list.append({'name': enchant_name, 'level': level, 'cost': cost})

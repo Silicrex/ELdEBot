@@ -1,7 +1,8 @@
 from discord.ext import commands
 from .data import DB, save
-from .helpers import get_enchant_data, get_enchant_name, get_enchant_list, check_best_level, check_best_rate, EMS, \
-    check_villager, replace_best_level, replace_best_rate, sorted_dict, get_enchant_best_level, get_enchant_best_rate
+from .helpers import get_enchant_data, get_enchant_name, get_enchant_list, check_best_level, check_best_rate, \
+    check_villager, replace_best_level, replace_best_rate, sorted_dict, get_enchant_best_level, get_enchant_best_rate, \
+    EMS, VALID_CHARS
 
 
 class Villagers(commands.Cog):
@@ -153,7 +154,10 @@ class Villagers(commands.Cog):
         if villager_name in villagers:
             await ctx.send('Villager name already in use')
             return
-        elif not villager_name.replace(' ', '').isalnum():
+        elif not all([c in VALID_CHARS for c in villager_name]):
+            print('hm')
+            print(f'{VALID_CHARS=}')
+            print(villager_name)
             await ctx.send('Villager names must be alphanumeric')
             return
 
@@ -233,7 +237,7 @@ class Villagers(commands.Cog):
         if new_villager_name in villagers:
             await ctx.send('That name is already in use')
             return
-        elif not new_villager_name.replace(' ', '').isalnum():
+        elif not all([c in VALID_CHARS for c in new_villager_name]):
             await ctx.send('Villager names must be alphanumeric')
             return
         villagers[new_villager_name] = villagers[villager_name]
