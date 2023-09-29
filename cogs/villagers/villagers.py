@@ -327,7 +327,7 @@ class Villagers(commands.Cog):
     @priority.command(name='list')
     async def priority_list(self, ctx):
         priority = DB['priority']
-        body = '\n'.join(priority)
+        body = '\n'.join([string.capwords(s) for s in priority])
         await ctx.send(f'**Priority Enchant List:**\n{body}')
 
     @priority.command(name='add')
