@@ -109,7 +109,7 @@ def check_best_rate(enchant_name, level, cost, *, print_mode=True):
         return True
     else:
         if print_mode:
-            res.append(f"(([{string.capwords(enchant_name)} {level}]** {cost}{EMS} is not a better rate "
+            res.append(f"**[{string.capwords(enchant_name)} {level}]** {cost}{EMS} is not a better rate "
                        f"(cur: **[{string.capwords(enchant_name)} {best_rate['level']}]** {best_rate['cost']}{EMS})")
             if scaling:
                 res.append(f" <Scaled> (cur {cur_cost}{EMS}) vs (new {new_cost}{EMS}) for "
