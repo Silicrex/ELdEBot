@@ -340,6 +340,7 @@ class Villagers(commands.Cog):
             await ctx.send('That item is already on the list')
             return
         priority.append(text)
+        DB['priority'] = priority.sort()
         save()
         await ctx.send('Successfully added item to priority list')
 
