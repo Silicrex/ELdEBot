@@ -47,7 +47,7 @@ def get_enchant_list(input_list):
             return False
         cost = int(split[0])
         enchant_name = get_enchant_name(split[1:])
-        if not all([c in VALID_CHARS for c in enchant_name]):
+        if not valid_name(enchant_name):
             return False
         level = get_enchant_level(split[1:])
         enchant_list.append({'name': enchant_name, 'level': level, 'cost': cost})
@@ -212,3 +212,7 @@ def get_enchant_best_rate(villager_list, enchant_name):
 
 def sorted_dict(dictionary):
     return dict(sorted(dictionary.items()))
+
+
+def valid_name(name):
+    return all([c in VALID_CHARS for c in name])

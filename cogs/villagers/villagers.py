@@ -3,7 +3,7 @@ from discord.ext import commands
 from .data import DB, save
 from .helpers import get_enchant_data, get_enchant_name, get_enchant_list, check_best_level, check_best_rate, \
     check_villager, replace_best_level, replace_best_rate, sorted_dict, get_enchant_best_level, get_enchant_best_rate, \
-    EMS, VALID_CHARS
+    valid_name, EMS
 
 
 class Villagers(commands.Cog):
@@ -161,11 +161,8 @@ class Villagers(commands.Cog):
         if villager_name in villagers:
             await ctx.send('Villager name already in use')
             return
-        elif not all([c in VALID_CHARS for c in villager_name]):
-            print('hm')
-            print(f'{VALID_CHARS=}')
-            print(villager_name)
-            await ctx.send('Villager names must be alphanumeric')
+        elif not valid_name(villager_name):
+            await ctx.send('Villager name invalid')
             return
 
         # Validate & format enchants
@@ -247,8 +244,8 @@ class Villagers(commands.Cog):
         if new_villager_name in villagers:
             await ctx.send('That name is already in use')
             return
-        elif not all([c in VALID_CHARS for c in new_villager_name]):
-            await ctx.send('Villager names must be alphanumeric')
+        elif not valid_name(new_villager_name):
+            await ctx.send('New villager name invalid')
             return
         villagers[new_villager_name] = villagers[villager_name]
         for full_enchant_name, data in villagers[villager_name].items():
@@ -335,7 +332,7 @@ class Villagers(commands.Cog):
 
     @priority.command(name='add')
     async def priority_add(self, ctx, *, text: str.lower):
-        if not all([c.isalpha() or c.isspace() or c == "'" for c in text]):
+        if not valid_name(text):
             await ctx.send('Invalid input (note priority enchants do not take level)')
             return
         priority = DB['priority']
@@ -348,7 +345,7 @@ class Villagers(commands.Cog):
 
     @priority.command(name='remove')
     async def priority_remove(self, ctx, *, text: str.lower):
-        if not all([c.isalpha() or c.isspace() or c == "'" for c in text]):
+        if not valid_name(text):
             await ctx.send('Invalid input (note priority enchants do not take level)')
             return
         priority = DB['priority']
