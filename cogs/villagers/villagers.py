@@ -70,6 +70,7 @@ class Villagers(commands.Cog):
         # ex: check 10 fire aspect 2, 30 education 3
         args = text.split()
         enchants = DB['enchants']
+        priority = DB['priority']
         if len(args) < 2:
             await ctx.send('Missing required argument(s)')
             return
@@ -83,8 +84,11 @@ class Villagers(commands.Cog):
             level = enchant_data['level']
             cost = enchant_data['cost']
             if enchant_name not in enchants:
-                res.append(f'**[{string.capwords(enchant_name)} {level}]** is a new enchant!\n\n')
-                continue
+                if enchant_name in priority:
+                    res.append(f'**[{string.capwords(enchant_name)} {level}]** is a new **PRIORITY** enchant!\n\n')
+                else:
+                    res.append(f'**[{string.capwords(enchant_name)} {level}]** is a new enchant!\n\n')
+                    continue
             res.append(check_best_level(enchant_name, level, cost))
             res.append(check_best_rate(enchant_name, level, cost))
         await ctx.send(''.join(res))
@@ -150,6 +154,7 @@ class Villagers(commands.Cog):
             return
         villagers = DB['villagers']
         enchants = DB['enchants']
+        priority = DB['priority']
         villager_name = parsed[0]
 
         # Validate name
@@ -184,7 +189,10 @@ class Villagers(commands.Cog):
 
             # New enchant
             if enchant_name not in enchants:
-                res.append(f"**[{string.capwords(enchant_name)} {level}]** is a new enchant!\n\n")
+                if enchant_name in priority:
+                    res.append(f'**[{string.capwords(enchant_name)} {level}]** is a new **PRIORITY** enchant!\n\n')
+                else:
+                    res.append(f'**[{string.capwords(enchant_name)} {level}]** is a new enchant!\n\n')
                 new_enchant = True
                 enchants.update({enchant_name: {
                     'best_level': {'villager_name': villager_name, 'level': level, 'cost': cost},

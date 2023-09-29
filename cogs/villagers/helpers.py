@@ -2,7 +2,7 @@ import string
 from .data import DB
 
 EMS = '<:emerald:1156624279857811457>'
-VALID_CHARS = set(string.ascii_letters + string.digits + " '")
+VALID_CHARS = set(string.ascii_letters + string.digits + " '.:")
 
 
 def get_enchant_data(enchant_name):
