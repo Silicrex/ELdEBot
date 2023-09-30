@@ -86,6 +86,7 @@ class Villagers(commands.Cog):
             if enchant_name not in enchants:
                 if enchant_name in priority:
                     res.append(f'**[{string.capwords(enchant_name)} {level}]** is a new **PRIORITY** enchant!\n\n')
+                    continue
                 else:
                     res.append(f'**[{string.capwords(enchant_name)} {level}]** is a new enchant!\n\n')
                     continue
