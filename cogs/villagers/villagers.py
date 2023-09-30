@@ -90,8 +90,8 @@ class Villagers(commands.Cog):
                 else:
                     res.append(f'**[{string.capwords(enchant_name)} {level}]** is a new enchant!\n\n')
                     continue
-            res.append(check_best_level(enchant_name, level, cost))
-            res.append(check_best_rate(enchant_name, level, cost))
+            res.append(check_best_level(enchant_name, level, cost)[1])
+            res.append(check_best_rate(enchant_name, level, cost)[1])
         await ctx.send(''.join(res))
 
     @commands.command()
@@ -200,16 +200,16 @@ class Villagers(commands.Cog):
                 villager[full_enchant_name]['is_best_rate'] = True
                 continue
 
-            best_level_output = check_best_level(enchant_name, level, cost)
+            is_best_level, best_level_output = check_best_level(enchant_name, level, cost)
             res.append(best_level_output)
-            if best_level_output:
+            if is_best_level:
                 villager[full_enchant_name]['is_best_level'] = True
                 prev_villager = replace_best_level(villager_name, enchant_name, level, cost)
                 if prev_villager not in replaced_villagers and prev_villager != villager_name:
                     replaced_villagers.append(prev_villager)
-            best_rate_output = check_best_rate(enchant_name, level, cost)
+            is_best_rate, best_rate_output = check_best_rate(enchant_name, level, cost)
             res.append(best_rate_output)
-            if best_rate_output:
+            if is_best_rate:
                 villager[full_enchant_name]['is_best_rate'] = True
                 prev_villager = replace_best_rate(villager_name, enchant_name, level, cost)
                 if prev_villager not in replaced_villagers and prev_villager != villager_name:
