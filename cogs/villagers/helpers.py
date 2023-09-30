@@ -14,8 +14,8 @@ def get_enchant_data(enchant_name):
            f"{best_level['cost']}{EMS} --> **{best_level['villager_name']}**"]
     if not enchant['best_level']['level'] == enchant['best_rate']['level']:  # Highest-level enchant is also best rate
         scaled_cost = int(get_rate(best_rate['level'], best_rate['cost']) * get_lv1(best_level['level']))
-        print(f" || best rate: **[{string.capwords(enchant_name)} {best_rate['level']}]** "
-              f"{best_rate['cost']}{EMS} <Scaled {scaled_cost}{EMS}> --> **{best_rate['villager_name']}**")
+        res.append(f" || best rate: **[{string.capwords(enchant_name)} {best_rate['level']}]** "
+                   f"{best_rate['cost']}{EMS} <Scaled {scaled_cost}{EMS}> --> **{best_rate['villager_name']}**")
     return ''.join(res)
 
 
