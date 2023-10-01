@@ -1,9 +1,9 @@
 import string
 from discord.ext import commands
 from .data import DB, save
-from .helpers import get_enchant_data, get_enchant_name, get_enchant_list, check_best_level, check_best_rate, \
-    check_villager, replace_best_level, replace_best_rate, sorted_dict, get_enchant_best_level, get_enchant_best_rate, \
-    valid_name, EMS
+from .helpers import get_enchant_data_string, get_villager_data_string, get_enchant_name, get_enchant_list,\
+    check_best_level, check_best_rate, check_villager, replace_best_level, replace_best_rate, sorted_dict,\
+    get_enchant_best_level, get_enchant_best_rate, valid_name, EMS
 
 
 class Villagers(commands.Cog):
@@ -24,6 +24,7 @@ class Villagers(commands.Cog):
                        '- find <enchant>\n'
                        '- check <cost> <enchant>, ..\n'
                        '- villagers\n'
+                       '- villager <villager_name>\n'
                        '- add <villager name>, <cost1 enchant1>, <c2 e2>, <c3 e3>\n'
                        '- rename <villager name>, <new villager name>\n'
                        '- remove <villager name>\n'
@@ -40,7 +41,7 @@ class Villagers(commands.Cog):
             return
         res = []
         for enchant_name in enchants:
-            res.append(get_enchant_data(enchant_name))
+            res.append(get_enchant_data_string(enchant_name))
         await ctx.send('\n'.join(res))
 
     @commands.command()
@@ -62,7 +63,7 @@ class Villagers(commands.Cog):
             if not found:
                 await ctx.send('Enchant not found')
                 return
-        await ctx.send(get_enchant_data(enchant_name))
+        await ctx.send(get_enchant_data_string(enchant_name))
 
     @commands.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
@@ -136,6 +137,25 @@ class Villagers(commands.Cog):
                 tags.append(f"**[{string.capwords(full_enchant_name)}]** {data[full_enchant_name]['cost']}{EMS} {text}")
             res.append(', '.join(tags) + '\n')
         await ctx.send(''.join(res))
+
+    @commands.command()
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
+    async def villager(self, ctx, *, villager_name: str.lower):
+        if not valid_name(villager_name):
+            await ctx.send('Invalid name')
+            return
+        villagers = DB['villagers']
+        if villager_name not in villagers:
+            found = False
+            for test_villager_name in villagers:
+                if test_villager_name.startswith(villager_name):
+                    villager_name = test_villager_name
+                    found = True
+                    break
+            if not found:
+                await ctx.send('Villager not found')
+                return
+        await ctx.send(get_villager_data_string(villager_name))
 
     @commands.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
@@ -318,7 +338,7 @@ class Villagers(commands.Cog):
         res = []
         for enchant_name in enchants:
             if enchant_name in priority:
-                res.append(get_enchant_data(enchant_name))
+                res.append(get_enchant_data_string(enchant_name))
         if res:
             res.insert(0, '**Priority Enchants Owned:**')
             await ctx.send('\n'.join(res))

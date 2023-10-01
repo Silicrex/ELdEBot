@@ -5,7 +5,7 @@ EMS = '<:emerald:1156624279857811457>'
 VALID_CHARS = set(string.ascii_letters + string.digits + " '.:")
 
 
-def get_enchant_data(enchant_name):
+def get_enchant_data_string(enchant_name):
     enchants = DB['enchants']
     enchant = enchants[enchant_name]
     best_level = enchant['best_level']
@@ -16,6 +16,27 @@ def get_enchant_data(enchant_name):
         scaled_cost = int(get_rate(best_rate['level'], best_rate['cost']) * get_lv1(best_level['level']))
         res.append(f" || best rate: **[{string.capwords(enchant_name)} {best_rate['level']}]** "
                    f"{best_rate['cost']}{EMS} (Scaled {scaled_cost}{EMS}) --> **{best_rate['villager_name']}**")
+    return ''.join(res)
+
+
+def get_villager_data_string(villager_name):
+    villagers = DB['villagers']
+    villager = villagers[villager_name]
+    res = [f"**{villager_name}**: "]
+    tags = []
+    for full_enchant_name in villager:
+        is_best_level = villager[full_enchant_name]['is_best_level']
+        is_best_rate = villager[full_enchant_name]['is_best_rate']
+        if is_best_level and is_best_rate:
+            text = ' (LEVEL/RATE)'
+        elif is_best_level:
+            text = ' (LEVEL)'
+        elif is_best_rate:
+            text = ' (RATE)'
+        else:
+            text = ''
+        tags.append(f"**[{string.capwords(full_enchant_name)}]** {villager[full_enchant_name]['cost']}{EMS}{text}")
+    res.append(', '.join(tags) + '\n')
     return ''.join(res)
 
 
