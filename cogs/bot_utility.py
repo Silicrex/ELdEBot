@@ -8,10 +8,10 @@ class BotUtility(commands.Cog):
         self.bot = bot
 
     async def cog_load(self):
-        print(f'{self.__class__.__name__} loaded!')
+        print(f'{self.__class__.__name__} cog loaded!')
 
     async def cog_unload(self):
-        print(f'{self.__class__.__name__} unloaded!')
+        print(f'{self.__class__.__name__} cog unloaded!')
 
     @commands.Cog.listener()
     async def on_ready(self):

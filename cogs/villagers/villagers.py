@@ -11,10 +11,10 @@ class Villagers(commands.Cog):
         self.bot = bot
 
     async def cog_load(self):
-        print(f'{self.__class__.__name__} loaded!')
+        print(f'{self.__class__.__name__} cog loaded!')
 
     async def cog_unload(self):
-        print(f'{self.__class__.__name__} unloaded!')
+        print(f'{self.__class__.__name__} cog unloaded!')
 
     @commands.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
@@ -347,8 +347,13 @@ class Villagers(commands.Cog):
 
     @priority.command(name='list')
     async def priority_list(self, ctx):
+        enchants = DB['enchants']
         priority = DB['priority']
-        body = '\n'.join([string.capwords(s) for s in priority])
+        res = []
+        for enchant_name in priority:
+            owned = '**(OWNED)**' if enchant_name in enchants else ''
+            res.append(f'{string.capwords(enchant_name)}{owned}')
+        body = '\n'.join(res)
         await ctx.send(f'**Priority Enchant List:**\n{body}')
 
     @priority.command(name='add')
