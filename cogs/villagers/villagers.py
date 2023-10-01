@@ -351,8 +351,8 @@ class Villagers(commands.Cog):
         priority = DB['priority']
         res = []
         for enchant_name in priority:
-            owned = '**(OWNED)**' if enchant_name in enchants else ''
-            res.append(f'{string.capwords(enchant_name)}{owned}')
+            owned = '**(OWNED)** ' if enchant_name in enchants else ''
+            res.append(f'{owned}{string.capwords(enchant_name)}')
         body = '\n'.join(res)
         await ctx.send(f'**Priority Enchant List:**\n{body}')
 
