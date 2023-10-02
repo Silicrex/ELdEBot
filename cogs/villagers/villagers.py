@@ -3,7 +3,7 @@ from discord.ext import commands
 from .data import DB, save
 from .helpers import get_enchant_data_string, get_villager_data_string, get_enchant_name, get_enchant_list,\
     check_best_level, check_best_rate, check_villager, replace_best_level, replace_best_rate, sorted_dict,\
-    get_enchant_best_level, get_enchant_best_rate, valid_name, EMS
+    get_enchant_best_level, get_enchant_best_rate, valid_name, EMS, EBOOK
 
 
 class Villagers(commands.Cog):
@@ -28,7 +28,8 @@ class Villagers(commands.Cog):
                        '- add <villager name>, <cost1 enchant1>, <c2 e2>, <c3 e3>\n'
                        '- rename <villager name>, <new villager name>\n'
                        '- remove <villager name>\n'
-                       '- priority (add/remove <enchant_name>)')
+                       '- priority (add/remove <enchant_name>)\n'
+                       '- scale cost:level new_level')
 
     @commands.command(aliases=['enchants'])
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
@@ -356,28 +357,58 @@ class Villagers(commands.Cog):
         await ctx.send(f'**Priority Enchant List:**\n{body}')
 
     @priority.command(name='add')
-    async def priority_add(self, ctx, *, text: str.lower):
-        if not valid_name(text):
+    async def priority_add(self, ctx, *, enchant_name: str.lower):
+        if not valid_name(enchant_name):
             await ctx.send('Invalid input (note priority enchants do not take level)')
             return
         priority = DB['priority']
-        if text in priority:
+        if enchant_name in priority:
             await ctx.send('That item is already on the list')
             return
-        priority.append(text)
+        priority.append(enchant_name)
         DB['priority'] = sorted(priority)
         save()
         await ctx.send('Successfully added item to priority list')
 
     @priority.command(name='remove')
-    async def priority_remove(self, ctx, *, text: str.lower):
-        if not valid_name(text):
+    async def priority_remove(self, ctx, *, enchant_name: str.lower):
+        if not valid_name(enchant_name):
             await ctx.send('Invalid input (note priority enchants do not take level)')
             return
         priority = DB['priority']
-        if text not in priority:
+        if enchant_name not in priority:
             await ctx.send('That item is not on the list')
             return
-        priority.remove(text)
+        priority.remove(enchant_name)
         save()
         await ctx.send('Successfully removed item from priority list')
+
+    @commands.command()
+    async def scale(self, ctx, base: str, new_level: str):
+        if ':' not in base:
+            await ctx.send('Format args like (the text part is optional).. <cost>ems:lvl<level> lvl<new_level>')
+            return
+        cost, level = base.split(':')
+        cost = cost.replace('ems', '')
+        level = level.replace('lvl', '').replace('lv', '')
+        new_level = new_level.replace('lvl', '').replace('lv', '')
+        if not (cost.isnumeric() and level.isnumeric() and new_level.isnumeric()):
+            await ctx.send('Invalid inputs, use integers')
+            return
+        cost = int(cost)
+        level = int(level)
+        new_level = int(new_level)
+        if not level > 0 or not new_level > 0:
+            await ctx.send('Error: cannot use 0')
+            return
+
+        if new_level >= level:
+            mult = 2 ** (new_level - level)
+            await ctx.send(f'It would cost {cost * mult}{EMS} ({mult}{EBOOK}) to go from '
+                           f'**Level {level}** to **Level {new_level}**')
+        else:  # Scaling down to a lower level
+            mult = 2 ** (level - new_level)
+            new_cost = cost / mult
+            new_cost_text = str(int(new_cost)) if new_cost.is_integer() else f'{new_cost:.2f}'
+            await ctx.send(f'{EBOOK} **Level {level}** @ {cost}{EMS} = '
+                           f'{mult}x [{EBOOK} **Level {new_level}** @ {new_cost_text}{EMS}]')

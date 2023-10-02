@@ -2,6 +2,7 @@ import string
 from .data import DB
 
 EMS = '<:emerald:1156624279857811457>'
+EBOOK = '<:ebook:1158537467482341487>'
 VALID_CHARS = set(string.ascii_letters + string.digits + " '.:")
 
 
@@ -93,8 +94,8 @@ def check_best_level(enchant_name, level, cost):
                       f"(prev: **[{string.capwords(enchant_name)} {best_level['level']}]** @ {villager_name})\n")
     elif level == best_level['level'] and get_rate(level, cost) < get_rate(best_level['level'], best_level['cost']):
         return (True, f"~! **[{string.capwords(enchant_name)} {level}]** is not a higher level but is a "
-                      f"better rate for the best level ({cost}{EMS}) compared to prev ({best_level['cost']}{EMS}) "
-                      f"@ {villager_name}\n")
+                      f"better rate for the best level (@ {cost}{EMS}) compared to prev (@ {best_level['cost']}{EMS}) "
+                      f"--> {villager_name}\n")
     else:
         return (False, f"**[{string.capwords(enchant_name)} {level}]** is not a higher level " 
                        f"(cur: **[{string.capwords(enchant_name)} {best_level['level']}]**)\n")
