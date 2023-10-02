@@ -86,10 +86,10 @@ class Villagers(commands.Cog):
             cost = enchant_data['cost']
             if enchant_name not in enchants:
                 if enchant_name in priority:
-                    res.append(f'**[{string.capwords(enchant_name)} {level}]** is a new **PRIORITY** enchant!\n\n')
+                    res.append(f'!! **[{string.capwords(enchant_name)} {level}]** is a new **PRIORITY** enchant!\n\n')
                     continue
                 else:
-                    res.append(f'**[{string.capwords(enchant_name)} {level}]** is a new enchant!\n\n')
+                    res.append(f'! **[{string.capwords(enchant_name)} {level}]** is a new enchant!\n\n')
                     continue
             res.append(check_best_level(enchant_name, level, cost)[1])
             res.append(check_best_rate(enchant_name, level, cost)[1])
@@ -208,9 +208,9 @@ class Villagers(commands.Cog):
             # New enchant
             if enchant_name not in enchants:
                 if enchant_name in priority:
-                    res.append(f'**[{string.capwords(enchant_name)} {level}]** is a new **PRIORITY** enchant!\n\n')
+                    res.append(f'!! **[{string.capwords(enchant_name)} {level}]** is a new **PRIORITY** enchant!\n\n')
                 else:
-                    res.append(f'**[{string.capwords(enchant_name)} {level}]** is a new enchant!\n\n')
+                    res.append(f'! **[{string.capwords(enchant_name)} {level}]** is a new enchant!\n\n')
                 new_enchant = True
                 enchants.update({enchant_name: {
                     'best_level': {'villager_name': villager_name, 'level': level, 'cost': cost},
@@ -310,19 +310,18 @@ class Villagers(commands.Cog):
                 new_villager_name = level_res['villager_name']
                 new_full_enchant_name = f"{enchant_name} {level_res['level']}"
                 villagers[new_villager_name][new_full_enchant_name]['is_best_level'] = True
-                res.append(f"Replaced best level of **[{string.capwords(full_enchant_name)}]** with "
-                           f"**[{string.capwords(enchant_name)} "
-                           f"{level_res['level']}]** {level_res['cost']}{EMS} --> "
-                           f"**{level_res['villager_name']}**\n")
+                res.append(f"Replaced best level of **[{string.capwords(full_enchant_name)}]** {data['cost']}{EMS} "
+                           f"with **[{string.capwords(enchant_name)} {level_res['level']}]** {level_res['cost']}{EMS} "
+                           f"--> **{level_res['villager_name']}**\n")
             if data['is_best_rate']:
                 rate_res = get_enchant_best_rate(other_villager_names, enchant_name)
                 new_villager_name = rate_res['villager_name']
                 new_full_enchant_name = f"{enchant_name} {rate_res['level']}"
                 villagers[new_villager_name][new_full_enchant_name]['is_best_rate'] = True
                 enchants[enchant_name]['best_rate'] = rate_res
-                res.append(f"Replaced best rate of **[{string.capwords(enchant_name)}]** with "
-                           f"**[{string.capwords(enchant_name)} "
-                           f"{rate_res['level']}]** {rate_res['cost']}{EMS} --> **{rate_res['villager_name']}**\n")
+                res.append(f"Replaced best rate of **[{string.capwords(full_enchant_name)}]** {data['cost']}{EMS} "
+                           f"with **[{string.capwords(enchant_name)} {rate_res['level']}]** {rate_res['cost']}{EMS} "
+                           f"--> **{rate_res['villager_name']}**\n")
         villagers.pop(villager_name)
         res.append(f'Successfully deleted **{villager_name}**\n')
         save()
