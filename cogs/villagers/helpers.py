@@ -37,7 +37,7 @@ def get_villager_data_string(villager_name):
         else:
             text = ''
         tags.append(f"**[{string.capwords(full_enchant_name)}]** {villager[full_enchant_name]['cost']}{EMS}{text}")
-    res.append(', '.join(tags) + '\n')
+    res.append(', '.join(tags))
     return ''.join(res)
 
 

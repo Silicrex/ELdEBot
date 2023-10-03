@@ -102,43 +102,17 @@ class Villagers(commands.Cog):
     async def villagers(self, ctx):
         # ex: villagers
         villagers = DB['villagers']
-        used_villagers = []
-        unused_villagers = []
-        res = []
-
         if not villagers:
             await ctx.send('There are no villagers')
             return
-
+        unused_villagers = []
         for villager_name in villagers:
-            if check_villager(villager_name):
-                used_villagers.append(villager_name)
-            else:
+            if not check_villager(villager_name):
                 unused_villagers.append(villager_name)
-
-        if unused_villagers:
-            for villager_name in unused_villagers:
-                res.append(f'**{villager_name}** does not contribute any bests!\n')
-            res.append('\n')
-
-        for villager_name in used_villagers:
-            data = villagers[villager_name]
-            tags = []
-            res.append(f"**{villager_name}**: ")
-            for full_enchant_name in data:
-                is_best_level = data[full_enchant_name]['is_best_level']
-                is_best_rate = data[full_enchant_name]['is_best_rate']
-                if not (is_best_level or is_best_rate):
-                    continue
-                if is_best_level and is_best_rate:
-                    text = '(LEVEL/RATE)'
-                elif is_best_level:
-                    text = '(LEVEL)'
-                else:
-                    text = '(RATE)'
-                tags.append(f"**[{string.capwords(full_enchant_name)}]** {data[full_enchant_name]['cost']}{EMS} {text}")
-            res.append(', '.join(tags) + '\n')
-        await ctx.send(''.join(res))
+        pages = VillagerPages(villagers, unused_villagers)
+        view = PageView(pages)
+        view.author = ctx.author
+        view.message = await ctx.send(pages.get_current_page(), view=view)
 
     @commands.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
@@ -245,6 +219,7 @@ class Villagers(commands.Cog):
 
         if new_enchant:
             DB['enchants'] = sorted_dict(enchants)
+        DB['villagers'] = sorted_dict(villagers)
 
         await ctx.send(''.join(res))
         save()

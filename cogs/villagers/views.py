@@ -1,5 +1,5 @@
 import discord
-from .helpers import get_enchant_data_string, get_villager_data_string
+from .helpers import get_enchant_data_string, get_villager_data_string, check_villager
 
 
 def pluralize(s, n):
@@ -7,17 +7,17 @@ def pluralize(s, n):
 
 
 class Pages:
-    def __init__(self, dictionary):
+    def __init__(self, dictionary, keys_per_page=10):
         self.dictionary = dictionary
         self.keys = list(dictionary)
         self.total_keys = len(dictionary)
         self.page = 1
-        self.keys_per_page = 10
+        self.keys_per_page = keys_per_page
         self.total_pages = self.key_index_to_page(self.total_keys - 1)
 
     def get_current_page(self):
         res = [f'Page {self.page}/{self.total_pages:,} '
-               f'({self.total_keys:,} {pluralize("item", self.total_keys)} total):\n']
+               f'({self.total_keys:,} {pluralize("item", self.total_keys)} total):\n\n']
 
         index_offset = (self.page - 1) * self.keys_per_page  # Skip past prior pages
         keys_left = self.total_keys - (self.page - 1) * self.keys_per_page
@@ -50,19 +50,45 @@ class EnchantPages(Pages):
 
 
 class VillagerPages(Pages):
+    def __init__(self, dictionary, unused_villagers):
+        super().__init__(dictionary, keys_per_page=5)
+        self.unused_villagers = unused_villagers
+
+    def get_current_page(self):
+        res = [f'Page {self.page}/{self.total_pages:,} '
+               f'({self.total_keys:,} {pluralize("item", self.total_keys)} total):\n']
+
+        if self.unused_villagers:
+            res.append(f"Villagers with no bests: {', '.join(self.unused_villagers)}\n\n")
+        else:
+            res.append('\n')
+
+        index_offset = (self.page - 1) * self.keys_per_page  # Skip past prior pages
+        keys_left = self.total_keys - (self.page - 1) * self.keys_per_page
+        # Get min between keys_per_page and # of keys left (so last page doesn't index error)
+        for n in range(min(self.keys_per_page, keys_left)):  # Print items on page
+            index = index_offset + n
+            res.append(self.get_item_text(index) + '\n')
+        return ''.join(res)
+
     def get_item_text(self, index):
         return get_villager_data_string(self.keys[index])
 
 
 class PageView(discord.ui.View):
     def __init__(self, pages):
-        super().__init__(timeout=10)
+        super().__init__(timeout=30)
         self.author = None
         self.message = None
         self.pages = pages
 
     async def interaction_check(self, interaction):
-        return self.author == interaction.user
+        if self.author == interaction.user:
+            return True
+        else:
+            await interaction.response.send_message('Only the command sender can use this!', ephemeral=True,
+                                                    delete_after=5)
+            return False
 
     async def on_timeout(self):
         for item in self.children:
