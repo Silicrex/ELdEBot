@@ -4,6 +4,7 @@ from .data import DB, save
 from .helpers import get_enchant_data_string, get_villager_data_string, get_enchant_name, get_enchant_list,\
     check_best_level, check_best_rate, check_villager, replace_best_level, replace_best_rate, sorted_dict,\
     get_enchant_best_level, get_enchant_best_rate, valid_name, EMS, EBOOK
+from .views import EnchantPages, VillagerPages, PageView
 
 
 class Villagers(commands.Cog):
@@ -40,10 +41,10 @@ class Villagers(commands.Cog):
         if not enchants:
             await ctx.send('There are no enchants')
             return
-        res = []
-        for enchant_name in enchants:
-            res.append(get_enchant_data_string(enchant_name))
-        await ctx.send('\n'.join(res))
+        pages = EnchantPages(enchants)
+        view = PageView(pages)
+        view.author = ctx.author
+        view.message = await ctx.send(pages.get_current_page(), view=view)
 
     @commands.command()
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.guild)
