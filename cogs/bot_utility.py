@@ -26,6 +26,8 @@ class BotUtility(commands.Cog):
 
         if isinstance(error, commands.CommandOnCooldown):
             await ctx.send(f'{ctx.command} is on cooldown for another {error.retry_after:.2f} seconds')
+        elif isinstance(error, commands.CommandNotFound):
+            await ctx.send('Command not found')
         elif isinstance(error, commands.CheckFailure):
             return
         elif isinstance(error, commands.MissingRequiredArgument):

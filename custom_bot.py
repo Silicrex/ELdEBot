@@ -31,7 +31,7 @@ class SetupCog(commands.Cog):
     @commands.command()
     async def sync_tree(self, ctx):
         await self.bot.tree.sync()
-        print('Sync successful')
+        await ctx.send('Sync successful')
 
 
 class CustomBot(commands.Bot):
