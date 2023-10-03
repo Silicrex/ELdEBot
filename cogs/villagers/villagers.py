@@ -23,6 +23,7 @@ class Villagers(commands.Cog):
         await ctx.send('**Commands:**\n'
                        '- list\n'
                        '- find <enchant>\n'
+                       '- findlist <text>\n'
                        '- check <cost> <enchant>, ..\n'
                        '- villagers\n'
                        '- villager <villager_name>\n'
@@ -46,13 +47,13 @@ class Villagers(commands.Cog):
         view.author = ctx.author
         view.message = await ctx.send(pages.get_current_page(), view=view)
 
-    @commands.command()
+    @commands.command(aliases=['f'])
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.guild)
     async def find(self, ctx, *, text: str.lower):
         # ex: find ash destroyer
         args = text.split()
         if not (enchant_name := get_enchant_name(args)):
-            await ctx.send('Enchant not found')
+            await ctx.send('Invalid enchant name')
             return
         enchants = DB['enchants']
         if enchant_name not in enchants:
@@ -66,6 +67,26 @@ class Villagers(commands.Cog):
                 await ctx.send('Enchant not found')
                 return
         await ctx.send(get_enchant_data_string(enchant_name))
+
+    @commands.command(aliases=['fl', 'findl'])
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.guild)
+    async def findlist(self, ctx, *, text: str.lower):
+        # ex: findlist adv
+        if not valid_name(text):
+            await ctx.send('Invalid enchant name')
+            return
+        enchants = DB['enchants']
+        enchant_list = []
+        for enchant_name in enchants:
+            if enchant_name.startswith(text):
+                enchant_list.append(enchant_name)
+        if not enchant_list:
+            await ctx.send('Nothing found')
+            return
+        pages = EnchantPages({k: enchants[k] for k in enchant_list})
+        view = PageView(pages)
+        view.author = ctx.author
+        view.message = await ctx.send(pages.get_current_page(), view=view)
 
     @commands.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
