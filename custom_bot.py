@@ -28,6 +28,10 @@ class SetupCog(commands.Cog):
             return
         await ctx.send(f'{extension} reloaded!')
 
+    @commands.command()
+    async def sync_tree(self, ctx):
+        await self.bot.tree.sync()
+
 
 class CustomBot(commands.Bot):
     def __init__(self, **kwargs):

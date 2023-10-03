@@ -48,7 +48,7 @@ class BotUtility(commands.Cog):
                   f'Message ID: {ctx.message.id}')
             raise error
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     async def ping(self, ctx):
         start = time.perf_counter()
