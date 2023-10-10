@@ -5,6 +5,7 @@ from .helpers import get_enchant_data_string, get_villager_data_string, get_ench
     check_best_level, check_best_rate, check_villager, replace_best_level, replace_best_rate, sorted_dict,\
     get_enchant_best_level, get_enchant_best_rate, valid_name, EMS, EBOOK
 from .views import EnchantPages, VillagerPages, PageView
+from . import enchanting
 
 
 class Villagers(commands.Cog):
@@ -45,14 +46,13 @@ class Villagers(commands.Cog):
         pages = EnchantPages(enchants)
         view = PageView(pages)
         view.author = ctx.author
-        view.message = await ctx.send(pages.get_current_page(), view=view)
+        view.message = await ctx.send(pages.get_current_page_text(), view=view)
 
     @commands.command(aliases=['f'])
-    @commands.cooldown(rate=1, per=2, type=commands.BucketType.guild)
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.guild)
     async def find(self, ctx, *, text: str.lower):
         # ex: find ash destroyer
-        args = text.split()
-        if not (enchant_name := get_enchant_name(args)):
+        if not (enchant_name := get_enchant_name(text)):
             await ctx.send('Invalid enchant name')
             return
         enchants = DB['enchants']
@@ -86,7 +86,7 @@ class Villagers(commands.Cog):
         pages = EnchantPages({k: enchants[k] for k in enchant_list})
         view = PageView(pages)
         view.author = ctx.author
-        view.message = await ctx.send(pages.get_current_page(), view=view)
+        view.message = await ctx.send(pages.get_current_page_text(), view=view)
 
     @commands.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
@@ -133,7 +133,7 @@ class Villagers(commands.Cog):
         pages = VillagerPages(villagers, unused_villagers)
         view = PageView(pages)
         view.author = ctx.author
-        view.message = await ctx.send(pages.get_current_page(), view=view)
+        view.message = await ctx.send(pages.get_current_page_text(), view=view)
 
     @commands.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
@@ -268,7 +268,7 @@ class Villagers(commands.Cog):
             return
         villagers[new_villager_name] = villagers[villager_name]
         for full_enchant_name, data in villagers[villager_name].items():
-            enchant_name = get_enchant_name(full_enchant_name.split())
+            enchant_name = get_enchant_name(full_enchant_name)
             if data['is_best_level']:
                 enchants[enchant_name]['best_level']['villager_name'] = new_villager_name
             if data['is_best_rate']:
@@ -296,7 +296,7 @@ class Villagers(commands.Cog):
             return
         # Systematically find the replacement for each best the villager has
         for full_enchant_name, data in villagers[villager_name].items():
-            enchant_name = get_enchant_name(full_enchant_name.split())
+            enchant_name = get_enchant_name(full_enchant_name)
             if enchant_name not in enchants:  # Was already deleted from a duplicate enchant type on this villager
                 continue
             if data['is_best_level']:
@@ -409,3 +409,21 @@ class Villagers(commands.Cog):
             new_cost_text = str(int(new_cost)) if new_cost.is_integer() else f'{new_cost:.2f}'
             await ctx.send(f'{EBOOK} **Level {level}** @ {cost}{EMS} = '
                            f'{mult}x [{EBOOK} **Level {new_level}** @ {new_cost_text}{EMS}]')
+
+    @commands.command()
+    async def enchant(self, ctx, *, text: str.lower):
+        tags = ['helmet', 'chestplate', 'chestplate_heating', 'chestplate_berserk', 'leggings', 'boots']
+        if text == 'help':
+            await ctx.send(f"This command outputs a guide on efficiently enchanting items and "
+                           f"where to get the enchants from your villagers\n"
+                           f"Usage: **enchant <tag>**\n"
+                           f"- Go in order top-to-bottom\n"
+                           f"- Numbers in brackets [] represent level cost\n"
+                           f"- Shown villager goes by best level available, notes level if level is lower than needed\n"
+                           f"- 'DNH' = Do Not Have enchant\n"
+                           f"Enchant guide tags: {tags}")
+        elif text in tags:
+            tag_func = getattr(enchanting, text + '_tag')
+            await ctx.send(tag_func())
+        else:
+            await ctx.send("Invalid tag. Use 'enchant help' for help")

@@ -11,7 +11,7 @@ def main():
 
     # Bot setup
     discord_token = get_discord_token()
-    bot = CustomBot(command_prefix='$', intents=intents, case_insensitive=True, help_command=None)
+    bot = CustomBot(command_prefix='.', intents=intents, case_insensitive=True, help_command=None)
     bot.run(discord_token)
 
 

@@ -41,7 +41,8 @@ def get_villager_data_string(villager_name):
     return ''.join(res)
 
 
-def get_enchant_name(split: list):
+def get_enchant_name(text: str):
+    split = text.split()
     if split[-1].isnumeric():
         if len(split) == 1:
             return False
@@ -50,7 +51,8 @@ def get_enchant_name(split: list):
         return ' '.join(split)
 
 
-def get_enchant_level(split: list):
+def get_enchant_level(text: str):
+    split = text.split()
     if split[-1].isnumeric():
         if len(split) == 1:
             return False
@@ -68,10 +70,10 @@ def get_enchant_list(input_list):
         if not split[0].isnumeric():
             return False
         cost = int(split[0])
-        enchant_name = get_enchant_name(split[1:])
+        enchant_name = get_enchant_name(' '.join(split[1:]))
         if not valid_name(enchant_name):
             return False
-        level = get_enchant_level(split[1:])
+        level = get_enchant_level(' '.join(split[1:]))
         enchant_list.append({'name': enchant_name, 'level': level, 'cost': cost})
     return enchant_list
 
@@ -183,8 +185,8 @@ def get_enchant_best_level(villager_list, enchant_name):
     for villager_name in villager_list:
         villager_data = villagers[villager_name]
         for full_enchant_name in villager_data:
-            test_enchant_name = get_enchant_name(full_enchant_name.split())
-            test_level = get_enchant_level(full_enchant_name.split())
+            test_enchant_name = get_enchant_name(full_enchant_name)
+            test_level = get_enchant_level(full_enchant_name)
             test_cost = villager_data[full_enchant_name]['cost']
             if test_enchant_name != enchant_name:
                 continue
@@ -208,8 +210,8 @@ def get_enchant_best_rate(villager_list, enchant_name):
     for villager_name in villager_list:
         villager_data = villagers[villager_name]
         for full_enchant_name in villager_data:
-            test_enchant_name = get_enchant_name(full_enchant_name.split())
-            test_level = get_enchant_level(full_enchant_name.split())
+            test_enchant_name = get_enchant_name(full_enchant_name)
+            test_level = get_enchant_level(full_enchant_name)
             test_cost = villager_data[full_enchant_name]['cost']
             if test_enchant_name != enchant_name:
                 continue

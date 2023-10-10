@@ -15,7 +15,7 @@ class Pages:
         self.keys_per_page = keys_per_page
         self.total_pages = self.key_index_to_page(self.total_keys - 1)
 
-    def get_current_page(self):
+    def get_current_page_text(self):
         res = [f'Page {self.page}/{self.total_pages:,} '
                f'({self.total_keys:,} {pluralize("item", self.total_keys)} total):\n\n']
 
@@ -54,7 +54,7 @@ class VillagerPages(Pages):
         super().__init__(dictionary, keys_per_page=5)
         self.unused_villagers = unused_villagers
 
-    def get_current_page(self):
+    def get_current_page_text(self):
         res = [f'Page {self.page}/{self.total_pages:,} '
                f'({self.total_keys:,} {pluralize("item", self.total_keys)} total):\n']
 
@@ -81,6 +81,7 @@ class PageView(discord.ui.View):
         self.author = None
         self.message = None
         self.pages = pages
+        self.update_buttons()
 
     async def interaction_check(self, interaction):
         if self.author == interaction.user:
@@ -94,17 +95,34 @@ class PageView(discord.ui.View):
         for item in self.children:
             item.disabled = True
         await self.message.edit(view=self)
+        
+    def update_buttons(self):
+        left = self.children[0]
+        right = self.children[1]
+        page = self.pages.page
+        total_pages = self.pages.total_pages
+        if page == 1:  # On first page
+            if total_pages > 1:
+                left.disabled = True
+                right.disabled = False
+            else:  # Only 1 page in total
+                left.disabled = True
+                right.disabled = True
+        elif page < total_pages:  # Middle page
+            left.disabled = False
+            right.disabled = False
+        else:  # Last page
+            left.disabled = False
+            right.disabled = True
 
     @discord.ui.button(label='<', style=discord.ButtonStyle.gray, disabled=True)
     async def left(self, interaction, button):
         self.pages.prev_page()
-        button.disabled = self.pages.page == 1
-        self.children[1].disabled = False
-        await interaction.response.edit_message(content=self.pages.get_current_page(), view=self)
+        self.update_buttons()
+        await interaction.response.edit_message(content=self.pages.get_current_page_text(), view=self)
 
-    @discord.ui.button(label='>', style=discord.ButtonStyle.gray)
+    @discord.ui.button(label='>', style=discord.ButtonStyle.gray, disabled=True)
     async def right(self, interaction, button):
         self.pages.next_page()
-        button.disabled = self.pages.page == self.pages.page == self.pages.total_pages
-        self.children[0].disabled = False
-        await interaction.response.edit_message(content=self.pages.get_current_page(), view=self)
+        self.update_buttons()
+        await interaction.response.edit_message(content=self.pages.get_current_page_text(), view=self)
