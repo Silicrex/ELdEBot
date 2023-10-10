@@ -80,20 +80,18 @@ def leggings_tag():
             f"Notes: Heating only if hyperthermia immune otherwise skip it")
 
 
-# def boots_tag():
-#     return (f"**Boots Enchantment Guide**\n"
-#             f"Total XP: 2067, Total Levels: 91\n"
-#             f"(1 -> 2 -> 4 -> 1)\n\n"
-#             f"**[3]** {estring('advanced feather falling 4')} + {estring('unbreaking 3')}\n"
-#             f"**[4]** {estring('light weight 3')} + {estring('high jump 2')}\n"
-#             f"**[1]** {estring('mending')} + {estring('heating')}\n"
-#             f"**[5]** **<Light Weight 3 + High Jump 2>** + **<Mending + Heating>**\n"
-#             f"**[4]** {estring('underwater strider 3')} + {estring('double jump')}\n"
-#             f"**[16]** Item + {estring('advanced protection 4')}\n"
-#             f"**[21]** Item + **<Advanced Feather Falling 4 + Unbreaking 3>**\n"
-#             f"**[19]** Item + **<Light Weight 3 + High Jump 2 + Mending + Heating>**\n"
-#             f"**[18]** Item + **<Underwater Strider 3 + Double Jump>**\n\n"
-#             f"Notes: Heating is for hyperthermia-immune builds")
+def boots_tag():
+    return (f"**Boots Enchantment Guide**\n"
+            f"Total XP: 1972, Total Levels: 87\n"
+            f"(1 -> 2 -> 3 -> 2)\n\n"
+            f"**[2]** {estring('advanced feather falling 4')} + {estring('mending')}\n"
+            f"**[4]** {estring('light weight 3')} + {estring('high jump 2')}\n"
+            f"**[4]** **<Light Weight 3 + High Jump 2>** + {estring('unbreaking 3')}\n"
+            f"**[4]** {estring('underwater strider 3')} + {estring('double jump')}\n"
+            f"**[16]** Item + {estring('advanced protection 4')}\n"
+            f"**[20]** Item + **<Advanced Feather Falling 4 + Mending>**\n"
+            f"**[19]** Item + **<Light Weight 3 + High Jump 2 + Unbreaking 3>**\n"
+            f"**[18]** Item + **<Underwater Strider 3 + Double Jump>**\n\n")
 
 
 def boots_heating_tag():

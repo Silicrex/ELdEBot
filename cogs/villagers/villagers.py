@@ -412,7 +412,8 @@ class Villagers(commands.Cog):
 
     @commands.command()
     async def enchant(self, ctx, *, text: str.lower):
-        tags = ['helmet', 'chestplate', 'chestplate_heating', 'chestplate_berserk', 'leggings', 'boots']
+        tags = ['helmet', 'chestplate', 'chestplate_heating', 'chestplate_berserk', 'leggings', 'boots',
+                'boots_heating']
         if text == 'help':
             await ctx.send(f"This command outputs a guide on efficiently enchanting items and "
                            f"where to get the enchants from your villagers\n"
