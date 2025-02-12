@@ -1,5 +1,5 @@
 import discord
-from helpers import read_env, get_discord_token
+from helpers import read_env, get_bot_prefix, get_discord_token
 from custom_bot import CustomBot
 
 
@@ -10,8 +10,9 @@ def main():
     intents.dm_messages = False
 
     # Bot setup
+    bot_prefix = get_bot_prefix()
     discord_token = get_discord_token()
-    bot = CustomBot(command_prefix='$', intents=intents, case_insensitive=True, help_command=None)
+    bot = CustomBot(command_prefix=bot_prefix, intents=intents, case_insensitive=True, help_command=None)
     bot.run(discord_token)
 
 

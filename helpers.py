@@ -9,6 +9,8 @@ def read_env():
         with open('.env', 'w') as file:
             file.write('# Tokens\n'
                        'DISCORD_TOKEN=\n\n'
+                       '# Settings\n'
+                       'BOT_PREFIX=\n\n'
                        '# Postgres\n'
                        'PG_DATABASE=\n'
                        'PG_USER=\n'
@@ -30,6 +32,9 @@ def get_extension(text):
 
 def get_discord_token():
     return os.getenv('DISCORD_TOKEN')
+
+def get_bot_prefix():
+    return os.getenv('BOT_PREFIX')
 
 def get_pg_login():
     return {'database': os.getenv('PG_DATABASE'), 'user': os.getenv('PG_USER'), 'password': os.getenv('PG_PASSWORD')}
