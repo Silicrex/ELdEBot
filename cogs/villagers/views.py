@@ -1,5 +1,5 @@
 import discord
-from .helpers import get_enchant_data_string, get_villager_data_string, check_villager
+from .helpers import create_enchant_data_string, create_villager_data_string, check_villager
 
 
 def pluralize(s, n):
@@ -40,13 +40,14 @@ class Pages:
         if self.page > 1:
             self.page -= 1
 
-    def get_item_text(self, index):  # index from the list of keys
-        raise NotImplementedError
+    def get_item_text(self, index):  # index from the list of keys, return line output
+        return self.dictionary[self.keys[index]]
 
 
 class EnchantPages(Pages):
     def get_item_text(self, index):
-        return get_enchant_data_string(self.keys[index])
+        enchant_name = self.keys[index]
+        return create_enchant_data_string(self.dictionary[enchant_name], enchant_name)
 
 
 class VillagerPages(Pages):
@@ -59,7 +60,7 @@ class VillagerPages(Pages):
                f'({self.total_keys:,} {pluralize("item", self.total_keys)} total):\n']
 
         if self.unused_villagers:
-            res.append(f"Villagers with no bests: {', '.join(self.unused_villagers)}\n\n")
+            res.append(f"**[!]** Villagers with no bests: {', '.join(self.unused_villagers)}\n\n")
         else:
             res.append('\n')
 
@@ -72,7 +73,8 @@ class VillagerPages(Pages):
         return ''.join(res)
 
     def get_item_text(self, index):
-        return get_villager_data_string(self.keys[index])
+        villager_name = self.keys[index]
+        return create_villager_data_string(self.dictionary[villager_name], villager_name)
 
 
 class PageView(discord.ui.View):

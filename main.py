@@ -1,5 +1,5 @@
 import discord
-from helpers import get_discord_token
+from helpers import read_env, get_discord_token
 from custom_bot import CustomBot
 
 
@@ -11,9 +11,10 @@ def main():
 
     # Bot setup
     discord_token = get_discord_token()
-    bot = CustomBot(command_prefix='.', intents=intents, case_insensitive=True, help_command=None)
+    bot = CustomBot(command_prefix='$', intents=intents, case_insensitive=True, help_command=None)
     bot.run(discord_token)
 
 
 if __name__ == '__main__':
+    read_env()
     main()

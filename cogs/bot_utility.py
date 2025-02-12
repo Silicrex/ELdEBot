@@ -2,7 +2,6 @@ import time
 import discord
 from discord.ext import commands
 
-
 class BotUtility(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -59,13 +58,10 @@ class BotUtility(commands.Cog):
         duration = (end - start) * 1000
         await message.edit(content=f'Pong! {duration:.2f}ms')
 
-    @commands.group(invoke_without_command=True)
-    async def test(self, ctx, *, arg1):
-        await ctx.send('group yes')
-
-    @test.command()
-    async def add(self, ctx):
-        await ctx.send('subcommand yes')
+    @commands.command()
+    async def test(self, ctx, *, text):
+        x = [text]
+        print(x)
 
 
 async def setup(bot):
