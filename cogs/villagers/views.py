@@ -51,16 +51,16 @@ class EnchantPages(Pages):
 
 
 class VillagerPages(Pages):
-    def __init__(self, dictionary, unused_villagers):
+    def __init__(self, dictionary, redundant_villagers):
         super().__init__(dictionary, keys_per_page=5)
-        self.unused_villagers = unused_villagers
+        self.redundant_villagers = redundant_villagers
 
     def get_current_page_text(self):
         res = [f'Page {self.page}/{self.total_pages:,} '
                f'({self.total_keys:,} {pluralize("item", self.total_keys)} total):\n']
 
-        if self.unused_villagers:
-            res.append(f"**[!]** Villagers with no bests: {', '.join(self.unused_villagers)}\n\n")
+        if self.redundant_villagers:
+            res.append(f"**[!]** Villagers with no bests: {', '.join(self.redundant_villagers)}\n\n")
         else:
             res.append('\n')
 

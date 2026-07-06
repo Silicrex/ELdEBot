@@ -1,9 +1,63 @@
 import string
-from .data import DB
 
 EMS = '<:emerald:1156624279857811457>'
 EBOOK = '<:ebook:1158537467482341487>'
 VALID_CHARS = set(string.ascii_letters + string.digits + " '.:")
+
+
+async def add_enchants(con, villager_name, enchant_list):
+    # Takes list of dicts, each representing an enchant, with keys 'name', 'level', 'cost'
+    # Returns output
+    out = []  # To build output
+    priority_list = await get_priority_list(con)
+    replaced_villagers = []  # To check for if still contributing a best after update
+    for enchant_data in enchant_list:
+        enchant_name = enchant_data['name']
+        level = enchant_data['level']
+        cost = enchant_data['cost']
+        # Add trade to db
+        trade_id = await con.fetchval('INSERT INTO trades (villager_name, enchant_name, level, cost) '
+                                      'VALUES ($1, $2, $3, $4) '
+                                      'RETURNING id', villager_name, enchant_name, level, cost)
+
+        # Check if new enchant
+        result = await con.fetchval('SELECT 1 FROM best_enchants WHERE name = $1 FOR UPDATE',
+                                    enchant_name)
+        if result is None:  # Is a new enchant, so will be best for level and rate
+            await con.execute('INSERT INTO best_enchants (name, best_level, best_rate) '
+                              'VALUES ($1, $2, $2)', enchant_name, trade_id)
+            if enchant_name in priority_list:
+                out.append(
+                    f'!! **[{string.capwords(enchant_name)} {level}]** is a new **PRIORITY** enchant!\n\n')
+            else:
+                out.append(f'! **[{string.capwords(enchant_name)} {level}]** is a new enchant!\n\n')
+            continue
+
+        # Not a new enchant. Perform comparisons
+        is_best_level, cur_level_villager, lvl_output = await check_best_level(con, enchant_name, level, cost)
+        out.append(lvl_output)
+        is_best_rate, cur_rate_villager, rate_output = await check_best_rate(con, enchant_name, level, cost)
+        out.append(rate_output)
+
+        # Update best_enchants, record any villagers whose trades got bested
+        if is_best_level:
+            await con.execute('UPDATE best_enchants SET best_level = $1 '
+                              'WHERE name = $2', trade_id, enchant_name)
+            if cur_level_villager not in replaced_villagers and cur_level_villager != villager_name:
+                replaced_villagers.append(cur_level_villager)
+        if is_best_rate:
+            await con.execute('UPDATE best_enchants SET best_rate = $1 '
+                              'WHERE name = $2', trade_id, enchant_name)
+            if cur_rate_villager not in replaced_villagers and cur_rate_villager != villager_name:
+                replaced_villagers.append(cur_rate_villager)
+        out.append('\n')
+    out.append(f'Successfully added villager **{villager_name}**!\n')
+
+    for replaced_villager in replaced_villagers:
+        if not await check_villager(con, replaced_villager):
+            out.append(f'**{replaced_villager}** no longer contributes any bests\n')
+
+    return out
 
 
 def create_enchant_data_string(record, enchant_name):
@@ -15,7 +69,7 @@ def create_enchant_data_string(record, enchant_name):
     res = [f"**[{string.capwords(enchant_name)} {best_level}]** "
            f"{record['best_level_cost']}{EMS} --> **{record['best_level_villager']}**"]
     if not same_trade:
-        scaled_cost = int(get_rate(best_rate_level, best_rate_cost) * get_lv1(best_level))
+        scaled_cost = int(get_rate(best_rate_level, best_rate_cost) * get_lvl_1(best_level))
         res.append(f" \\|\\| best rate: **[{string.capwords(enchant_name)} {best_rate_level}]** "
                    f"{best_rate_cost}{EMS} (Scaled {scaled_cost}{EMS}) --> **{record['best_rate_villager']}**")
     return ''.join(res)
@@ -82,6 +136,7 @@ def get_enchant_level(text: str):
 
 def create_enchant_list(input_list):
     # Takes list of string inputs '{cost} {enchant_name}' and returns a list of each item turned into a dict
+    # This approach is taken rather than just returning a dictionary with name: data pairs because there can be dupes
     enchant_list = []
     for split in [x.split() for x in input_list]:
         if len(split) < 2:
@@ -97,16 +152,17 @@ def create_enchant_list(input_list):
     return enchant_list
 
 
-def get_lv1(level):
+def get_lvl_1(level):
     return 2**(level-1)
 
 
 def get_rate(level, cost):
     # cost per lvl 1. Lower is better
-    return cost / get_lv1(level)
+    return cost / get_lvl_1(level)
 
 
 async def check_best_level(con, enchant_name, level, cost):
+    # Assumes enchant already exists
     result = await con.fetchrow('SELECT level, villager_name, cost FROM best_enchants JOIN trades '
                                 'ON best_enchants.best_level = trades.id '
                                 'WHERE best_enchants.name = $1', enchant_name)
@@ -127,6 +183,7 @@ async def check_best_level(con, enchant_name, level, cost):
 
 
 async def check_best_rate(con, enchant_name, level, cost):
+    # Assumes enchant already exists
     level_result = await con.fetchrow('SELECT level FROM best_enchants JOIN trades '
                                       'ON best_enchants.best_level = trades.id '
                                       'WHERE best_enchants.name = $1', enchant_name)
@@ -137,8 +194,8 @@ async def check_best_rate(con, enchant_name, level, cost):
     highest_level = max(level, best_level)
     best_rate_level = rate_result['level']
     best_rate_cost = rate_result['cost']
-    cur_cost = int(get_lv1(highest_level) * get_rate(best_rate_level, best_rate_cost))  # In terms of highest level
-    new_cost = int(get_lv1(highest_level) * get_rate(level, cost))
+    cur_cost = int(get_lvl_1(highest_level) * get_rate(best_rate_level, best_rate_cost))  # In terms of highest level
+    new_cost = int(get_lvl_1(highest_level) * get_rate(level, cost))
     scaling = level != best_level
     villager_name = rate_result['villager_name']
     formatted_enchant = string.capwords(enchant_name)
@@ -176,6 +233,22 @@ async def check_villager(con, villager_name):
                                  AND rate_trade.villager_name = $1""", villager_name)
 
 
+async def get_redundant_villagers(con):
+    # Checks all villagers and returns a list of any that are not contributing any bests
+    # For each trade, checks if its villager has any trades that are a best. There is some redundancy due to lack
+    # of a villagers table, but not enough for it to seem worthwhile to create one just for this purpose
+    result = await con.fetch("""SELECT DISTINCT t1.villager_name FROM trades t1
+                                WHERE NOT EXISTS (
+                                    SELECT 1 FROM trades t2
+                                    WHERE t2.villager_name = t1.villager_name AND id IN (
+                                        SELECT best_level FROM best_enchants
+                                        UNION
+                                        SELECT best_rate FROM best_enchants
+                                    )
+                                )""")
+    return [record['villager_name'] for record in result]
+
+
 async def get_villager_data(con, villager_name):
     result = await con.fetch("""SELECT t.enchant_name, t.level, t.cost, 
                              CASE WHEN t.id = e.best_level THEN TRUE ELSE FALSE END AS is_best_level, 
@@ -183,20 +256,24 @@ async def get_villager_data(con, villager_name):
                              FROM trades t 
                              LEFT JOIN best_enchants e ON t.enchant_name = e.name 
                              WHERE villager_name = $1 
-                             ORDER BY slot""", villager_name)
+                             ORDER BY t.id""", villager_name)
     return result
 
 
+async def get_villager_enchants(con, villager_name):
+    # Returns a list of enchants a villager has, ordered by trade id
+    result = await con.fetch("""SELECT enchant_name FROM trades WHERE villager_name = $1 ORDER BY id""", villager_name)
+    return [record['enchant_name'] for record in result]
+
+
 async def get_villager_list(con):
-    result = await con.fetch('SELECT DISTINCT villager_name FROM trades')
-    sorted_villagers = sorted([record['villager_name'] for record in result])
-    return sorted_villagers
+    result = await con.fetch('SELECT DISTINCT villager_name FROM trades ORDER BY villager_name')
+    return [record['villager_name'] for record in result]
 
 
 async def get_enchant_list(con):
-    result = await con.fetch('SELECT DISTINCT name FROM best_enchants ORDER BY name')
-    sorted_enchants = sorted([record['name'] for record in result])
-    return sorted_enchants
+    result = await con.fetch('SELECT DISTINCT enchant_name FROM trades ORDER BY enchant_name')
+    return [record['enchant_name'] for record in result]
 
 
 async def get_enchant_data(con, enchant_name):
@@ -221,6 +298,7 @@ async def get_priority_list(con):
 
 async def get_enchant_best_level(con, enchant_name, blacklisted=''):
     # Returns None or a dict representing new best trade
+    # Blacklisted is to exclude a villager's own trades when deleting it
     trades = await con.fetch('SELECT id, villager_name, level, cost '
                              'FROM trades WHERE enchant_name = $1 AND villager_name != $2', enchant_name, blacklisted)
     best_trade_id = None
@@ -261,6 +339,57 @@ async def get_enchant_best_rate(con, enchant_name, blacklisted=''):
         return {'id': best_trade_id, 'villager_name': new_villager, 'level': best_level, 'cost': best_cost}
     else:
         return None
+
+
+async def update_enchant_bests(con, enchant_name):
+    # Assumes enchant_name is in trades
+    lvl_trade = await get_enchant_best_level(con, enchant_name)
+    rate_trade = await get_enchant_best_rate(con, enchant_name)
+    if lvl_trade is None or rate_trade is None:  # Shouldn't ever be the case
+        raise RuntimeError(f"update_enchant_bests() called with invalid enchant {enchant_name}")
+    lvl_id = lvl_trade['id']
+    rate_id = rate_trade['id']
+
+    # Check if has a best_enchants entry already
+    best_exists = await con.fetchval('SELECT 1 FROM best_enchants WHERE name = $1 LIMIT 1 FOR UPDATE', enchant_name)
+    if not best_exists:  # If not, create one
+        await con.execute('INSERT INTO best_enchants (name, best_level, best_rate) '
+                          'VALUES ($1, $2, $3)', enchant_name, lvl_id, rate_id)
+    else:
+        # Handle lvl, ignore if same value is already there
+        await con.execute('UPDATE best_enchants SET best_level = $1 '
+                          'WHERE name = $2 AND best_level IS DISTINCT FROM $1', lvl_id, enchant_name)
+        # Handle rate, ignore if same value is already there
+        await con.execute('UPDATE best_enchants SET best_rate = $1 '
+                          'WHERE name = $2 AND best_rate IS DISTINCT FROM $1', rate_id, enchant_name)
+
+
+async def rebuild_best_enchants(con):
+    await con.execute('LOCK TABLE trades IN ACCESS EXCLUSIVE MODE')
+    await con.execute('TRUNCATE TABLE best_enchants')
+    enchant_list = await get_enchant_list(con)
+    for enchant_name in enchant_list:
+        await update_enchant_bests(con, enchant_name)
+
+
+def diff_best_enchants(old, new):
+    # Compares the snapshot of best_enchants from before and after a rebuild. Returns a summary of changes found
+    # Start by restructuring both to an easier form to work with.
+    # Using tuples since we're only comparing and don't need the specific information
+    old_snapshot = {record['name']: (record['best_level'], record['best_rate']) for record in old}
+    new_snapshot = {record['name']: (record['best_level'], record['best_rate']) for record in new}
+
+    if old_snapshot == new_snapshot:
+        return 'No changes found'
+
+    lost_enchants = old_snapshot.keys() - new_snapshot.keys()
+    new_enchants = new_snapshot.keys() - old_snapshot.keys()
+    changed_enchants = {name for name in old_snapshot.keys() & new_snapshot.keys() if old_snapshot[name] != new_snapshot[name]}
+
+    return (f"Lost enchants ({len(lost_enchants)}): {', '.join(lost_enchants)}\n"
+            f"New enchants ({len(new_enchants)}): {', '.join(new_enchants)}\n"
+            f"Changed enchants ({len(changed_enchants)}): {', '.join(changed_enchants)}")
+
 
 
 def sorted_dict(dictionary):

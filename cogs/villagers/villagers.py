@@ -4,7 +4,8 @@ from discord.ext import commands
 from cogs.villagers.helpers import create_enchant_data_string, create_villager_data_string, \
     create_enchant_list, get_enchant_list, get_villager_list, get_villager_data, match_enchant, match_villager,\
     check_best_level, check_best_rate, check_villager, get_priority_list, get_enchant_data,\
-    get_enchant_best_level, get_enchant_best_rate, valid_name, EMS, EBOOK
+    get_enchant_best_level, get_enchant_best_rate, valid_name, EMS, EBOOK, rebuild_best_enchants, diff_best_enchants,\
+    get_redundant_villagers, get_villager_enchants, add_enchants
 from cogs.villagers.views import Pages, EnchantPages, VillagerPages, PageView
 from cogs.villagers import enchanting
 
@@ -23,24 +24,27 @@ class Villagers(commands.Cog):
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
     async def help(self, ctx):
         await ctx.send('**Commands:**\n'
-                       '- list\n'
-                       '- find <enchant>\n'
-                       '- findlist <text>\n'
-                       '- check <cost> <enchant>, ..\n'
-                       '- villagers\n'
-                       '- villager <villager_name>\n'
-                       '- add <villager name>, <cost1 enchant1>, <c2 e2>, <c3 e3>\n'
-                       '- rename <villager name>, <new villager name>\n'
-                       '- remove <villager name>\n'
-                       '- priority (add/remove <enchant_name>)\n'
-                       '- scale cost:level new_level')
+                       '\- list\n'
+                       '\- find <enchant>\n'
+                       '\- findlist <text>\n'
+                       '\- check <cost> <enchant>, ..\n'
+                       '\- villagers\n'
+                       '\- villager <villager_name>\n'
+                       '\- add <villager name>, <cost1 enchant1>, ...\n'
+                       '\- update <villager name>, <cost1 enchant1>, ...\n'
+                       '\- rename <villager name>, <new villager name>\n'
+                       '\- remove <villager name>\n'
+                       '\- priority (add/remove <enchant_name>)\n'
+                       '\- scale cost:level new_level')
 
     @commands.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
     async def add(self, ctx, *, text: str.lower):
         # ex: add bob, 10 ash destroyer, 5 mending, 7 supreme sharpness 5
+        # [name], [cost] [enchant_name] [enchant_level]
         # Names are forced lowercase no excess whitespace, enchant names are automatically adjusted during print
 
+        # Validate input
         args = ' '.join(text.split())  # Sanitize whitespace
         parsed = args.split(', ')  # ie [bob, 10 ash destroyer, 5 mending, 7 supreme sharpness 5]
         if len(parsed) < 2:
@@ -53,66 +57,64 @@ class Villagers(commands.Cog):
             await ctx.send('Villager name invalid')
             return
 
+        # Validate & format enchants
+        if not (enchant_list := create_enchant_list(parsed[1:])):  # Get list of dicts representing enchants
+            await ctx.send('Invalid input')
+            return
+        if len(enchant_list) > 3:
+            await ctx.send('Villagers can only have up to 3 enchant trades')
+            return
+
+        # Perform checks and update db
         async with self.bot.pg_pool.acquire() as con:
             async with con.transaction():
                 # Check if villager exists already
-                result = await con.fetchval('SELECT 1 FROM trades WHERE villager_name = $1 LIMIT 1 FOR UPDATE', villager_name)
+                result = await con.fetchval('SELECT 1 FROM trades WHERE villager_name = $1 LIMIT 1', villager_name)
                 if result is not None:
                     await ctx.send('Villager name already in use')
                     return
+
+                # Add enchants to trades and update best_enchants, returns output including
+                out = await add_enchants(con, villager_name, enchant_list)
+
+        await ctx.send(''.join(out))
+
+    @commands.command()
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
+    async def update(self, ctx, *, text: str.lower):
+        # ex: update bob, 10 range, 7 fire aspect 2
+        # [name], [cost] [enchant_name] [enchant_level]
+        # Names are forced lowercase no excess whitespace, enchant names are automatically adjusted during print
+
+        # Validate input
+        args = ' '.join(text.split())  # Sanitize whitespace
+        parsed = args.split(', ')  # ie [bob, 10 range, 7 fire aspect 2]
+        if len(parsed) < 2:
+            await ctx.send('Need at least one trade. Format args like: <name>, <cost1> <enchant1> ...')
+            return
+        villager_name = parsed[0]
+
+        # Perform checks and update
+        async with self.bot.pg_pool.acquire() as con:
+            async with con.transaction():
+                # Make sure villager exists
+                result = await con.fetchval('SELECT 1 FROM trades WHERE villager_name = $1 LIMIT 1 FOR UPDATE',
+                                            villager_name)
+                if result is None:
+                    await ctx.send('Villager not found')
+                    return
+                current_enchants_list = await get_villager_enchants(con, villager_name)
 
                 # Validate & format enchants
                 if not (enchant_list := create_enchant_list(parsed[1:])):  # Get list of dicts representing enchants
                     await ctx.send('Invalid input')
                     return
+                if len(current_enchants_list) + len(enchant_list) > 3:
+                    await ctx.send('Villagers can only have up to 3 enchant trades')
+                    return
 
-                # Iterate over enchants, perform comparisons, and update data
-                out = []  # To compile output at the end
-                slot = 0
-                priority_list = await get_priority_list(con)
-                replaced_villagers = []  # To check for if still contributing a best after update
-                for enchant_data in enchant_list:
-                    enchant_name = enchant_data['name']
-                    level = enchant_data['level']
-                    cost = enchant_data['cost']
-                    slot += 1
-                    # Add trade to db
-                    trade_id = await con.fetchval('INSERT INTO trades (villager_name, slot, enchant_name, level, cost) '
-                                                 'VALUES ($1, $2, $3, $4, $5) '
-                                                 'RETURNING id', villager_name, slot, enchant_name, level, cost)
-                    # Check if new enchant
-                    result = await con.fetchval('SELECT 1 FROM best_enchants WHERE name = $1 LIMIT 1 FOR UPDATE', enchant_name)
-                    if result is None:  # Is a new enchant
-                        await con.execute('INSERT INTO best_enchants (name, best_level, best_rate) '
-                                          'VALUES ($1, $2, $2)', enchant_name, trade_id)
-                        if enchant_name in priority_list:
-                            out.append(f'!! **[{string.capwords(enchant_name)} {level}]** is a new **PRIORITY** enchant!\n\n')
-                        else:
-                            out.append(f'! **[{string.capwords(enchant_name)} {level}]** is a new enchant!\n\n')
-                        continue
-
-                    # Not a new enchant. Perform comparisons
-                    is_best_level, cur_level_villager, lvl_output = await check_best_level(con, enchant_name, level, cost)
-                    out.append(lvl_output)
-                    is_best_rate, cur_rate_villager, rate_output = await check_best_rate(con, enchant_name, level, cost)
-                    out.append(rate_output)
-
-                    if is_best_level:
-                        await con.execute('UPDATE best_enchants SET best_level = $1 '
-                                          'WHERE name = $2', trade_id, enchant_name)
-                        if cur_level_villager not in replaced_villagers and cur_level_villager != villager_name:
-                            replaced_villagers.append(cur_level_villager)
-                    if is_best_rate:
-                        await con.execute('UPDATE best_enchants SET best_rate = $1 '
-                                          'WHERE name = $2', trade_id, enchant_name)
-                        if cur_rate_villager not in replaced_villagers and cur_rate_villager != villager_name:
-                            replaced_villagers.append(cur_rate_villager)
-                    out.append('\n')
-                out.append(f'Successfully added villager **{villager_name}**!\n')
-
-                for replaced_villager in replaced_villagers:
-                    if not await check_villager(con, replaced_villager):
-                        out.append(f'**{replaced_villager}** no longer contributes any bests\n')
+                # Add enchants to trades and update best_enchants, returns output
+                out = await add_enchants(con, villager_name, enchant_list)
 
         await ctx.send(''.join(out))
 
@@ -120,6 +122,8 @@ class Villagers(commands.Cog):
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
     async def rename(self, ctx, *, text: str.lower):
         # ex: rename bob, bob2
+
+        # Parse input
         args = ' '.join(text.split())  # Sanitize whitespace
         parsed = args.split(', ')  # List of args
         if len(parsed) != 2:
@@ -127,9 +131,11 @@ class Villagers(commands.Cog):
             return
         villager_name = parsed[0]
         new_villager_name = parsed[1]
+
+        # Perform checks and update
         async with self.bot.pg_pool.acquire() as con:
             async with con.transaction():
-                # Check if villager exists already
+                # Check if villager exists
                 result = await con.fetchval('SELECT 1 FROM trades WHERE villager_name = $1 LIMIT 1 FOR UPDATE', villager_name)
                 if result is None:
                     await ctx.send('Villager not found')
@@ -154,8 +160,8 @@ class Villagers(commands.Cog):
         out = []
         async with self.bot.pg_pool.acquire() as con:
             async with con.transaction():
-                result = await get_villager_data(con, villager_name)
-                if not result:
+                villager_data = await get_villager_data(con, villager_name)
+                if not villager_data:
                     await ctx.send('Villager not found')
                     return
                 if not await check_villager(con, villager_name):  # If villager has no bests, can delete without other updates
@@ -163,7 +169,7 @@ class Villagers(commands.Cog):
                     await ctx.send(f'Successfully deleted **{villager_name}**')
                     return
                 # Systematically find the replacement for each best the villager has
-                for trade in result:
+                for trade in villager_data:
                     enchant_name = trade['enchant_name']
                     level = trade['level']
                     cost = trade['cost']
@@ -183,7 +189,6 @@ class Villagers(commands.Cog):
                         new_villager = lvl_trade['villager_name']
                         await con.execute('UPDATE best_enchants '
                                           'SET best_level = $1 WHERE name = $2', new_id, enchant_name)
-                        print('help1')
                         out.append(f"Replaced best level of **[{string.capwords(enchant_name)} {level}]** {cost}{EMS} "
                                    f"with **[{string.capwords(enchant_name)} {new_level}]** {new_cost}{EMS} "
                                    f"--> **{new_villager}**\n")
@@ -195,7 +200,6 @@ class Villagers(commands.Cog):
                         new_villager = rate_trade['villager_name']
                         await con.execute('UPDATE best_enchants '
                                           'SET best_rate = $1 WHERE name = $2', new_id, enchant_name)
-                        print('help2')
                         out.append(
                             f"Replaced best rate of **[{string.capwords(enchant_name)} {level}]** {cost}{EMS} "
                             f"with **[{string.capwords(enchant_name)} {new_level}]** {new_cost}{EMS} "
@@ -327,32 +331,32 @@ class Villagers(commands.Cog):
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
     async def villagers(self, ctx):
         # ex: villagers
-        result = await self.bot.pg_pool.fetch("""SELECT t.villager_name, t.enchant_name, t.level, t.cost, 
-                                              CASE WHEN t.id = e.best_level THEN TRUE ELSE FALSE END AS is_best_level, 
-                                              CASE WHEN t.id = e.best_rate THEN TRUE ELSE FALSE END AS is_best_rate 
-                                              FROM trades t 
-                                              LEFT JOIN best_enchants e ON t.enchant_name = e.name 
-                                              ORDER BY villager_name, slot""")
-        if not result:
+
+        # Get a list of trades with information on bests included
+        async with self.bot.pg_pool.acquire() as con:
+            trades = await con.fetch("""SELECT t.villager_name, t.enchant_name, t.level, t.cost, 
+                                        CASE WHEN t.id = e.best_level THEN TRUE ELSE FALSE END AS is_best_level, 
+                                        CASE WHEN t.id = e.best_rate THEN TRUE ELSE FALSE END AS is_best_rate 
+                                        FROM trades t 
+                                        LEFT JOIN best_enchants e ON t.enchant_name = e.name 
+                                        ORDER BY t.villager_name, t.id""")
+            redundant_villagers = await get_redundant_villagers(con)
+        if not trades:
             await ctx.send('There are no villagers')
             return
+
+        # Parse the data and organize it per-villager
         villagers = {}
-        for trade in result:
+        for trade in trades:
             villager_name = trade['villager_name']
             if villager_name not in villagers:
                 villagers.update({villager_name: []})
             villagers[villager_name].append({'enchant_name': trade['enchant_name'], 'level': trade['level'],
                                              'cost': trade['cost'], 'is_best_level': trade['is_best_level'],
                                              'is_best_rate': trade['is_best_rate']})
-        unused_villagers = []
-        for villager_name, data in villagers.items():
-            has_best = False
-            for trade in data:
-                if trade['is_best_level'] or trade['is_best_rate']:
-                    has_best = True
-            if not has_best:
-                unused_villagers.append(villager_name)
-        pages = VillagerPages(villagers, unused_villagers)
+
+        # Send pages view
+        pages = VillagerPages(villagers, redundant_villagers)
         view = PageView(pages)
         view.author = ctx.author
         view.message = await ctx.send(pages.get_current_page_text(), view=view)
@@ -420,7 +424,7 @@ class Villagers(commands.Cog):
     async def priority_add(self, ctx, *, text: str.lower):
         # Allow line-separated lists
         lines = text.split('\n')
-        enchant_list = []
+        enchant_list = []  # Track added enchants
         async with self.bot.pg_pool.acquire() as con:
             priority_list = await get_priority_list(con)
             for line in lines:
@@ -433,6 +437,7 @@ class Villagers(commands.Cog):
             if not enchant_list:
                 await ctx.send('All listed enchants are already in priority list')
                 return
+            # Bulk insert
             await con.execute("""INSERT INTO priority (name) 
                               SELECT * FROM UNNEST($1::text[])""", enchant_list)
         await ctx.send('Successfully added enchant(s) to priority list')
@@ -480,7 +485,9 @@ class Villagers(commands.Cog):
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.guild)
     async def check(self, ctx, *, text: str.lower):
         # ex: check bob, 10 ash destroyer, 5 mending, 7 supreme sharpness 5
+        # Simulates what would happen if a villager were added
 
+        # Validate input
         split = text.split()
         args = ' '.join(split)  # Sanitize whitespace
         parsed = args.split(', ')  # ie [10 ash destroyer, 5 mending, 7 supreme sharpness 5]
@@ -492,17 +499,17 @@ class Villagers(commands.Cog):
             await ctx.send('Invalid input')
             return
 
+        # Iterate over enchants and perform comparisons
         async with self.bot.pg_pool.acquire() as con:
-            # Iterate over enchants and perform comparisons
             out = []  # To compile output at the end
             priority_list = await get_priority_list(con)
-            replaced_villagers = {}  # To check for if still contributing a best after update
+            replaced_villagers = {}  # dict to check for if still contributing a best after update
             for enchant_data in enchant_list:
                 enchant_name = enchant_data['name']
                 level = enchant_data['level']
                 cost = enchant_data['cost']
                 # Check if new enchant
-                result = await con.fetchval('SELECT 1 FROM best_enchants WHERE name = $1 LIMIT 1', enchant_name)
+                result = await con.fetchval('SELECT 1 FROM best_enchants WHERE name = $1', enchant_name)
                 if result is None:  # Is a new enchant
                     if enchant_name in priority_list:
                         out.append(f'!! **[{string.capwords(enchant_name)} {level}]** is a new **PRIORITY** enchant!\n\n')
@@ -516,24 +523,21 @@ class Villagers(commands.Cog):
                 is_best_rate, cur_rate_villager, rate_output = await check_best_rate(con, enchant_name, level, cost)
                 out.append(rate_output)
 
+                # Check if this would cause any villager redundancies by incrementally tracking remaining bests
+                # Start by getting total number of bests a potentially-affected villager has
+                # Each time the simulated change would overtake one, decrement the counter and see if there are any left
                 if is_best_level:
                     if cur_level_villager not in replaced_villagers:
                         villager_bests = await check_villager(con, cur_level_villager)
-                        print(f'{villager_bests=}')
                         replaced_villagers.update({cur_level_villager: villager_bests - 1})
-                        print(f'Created.. {replaced_villagers=}')
                     else:
                         replaced_villagers[cur_level_villager] -= 1
-                        print(f'Updated.. {replaced_villagers=}')
                 if is_best_rate:
                     if cur_rate_villager not in replaced_villagers:
                         villager_bests = await check_villager(con, cur_rate_villager)
-                        print(f'{villager_bests=}')
                         replaced_villagers.update({cur_rate_villager: villager_bests - 1})
-                        print(f'Created.. {replaced_villagers=}')
                     else:
                         replaced_villagers[cur_rate_villager] -= 1
-                        print(f'Updated.. {replaced_villagers=}')
                 out.append('\n')
 
             for replaced_villager in replaced_villagers:
@@ -591,6 +595,39 @@ class Villagers(commands.Cog):
                 await ctx.send(await tag_func(con))
         else:
             await ctx.send("Invalid tag. Use 'enchant help' for help")
+
+    @commands.command()
+    @commands.is_owner()
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
+    async def rebuild(self, ctx):
+        # Truncates and rebuilds best_enchants. Doubtful to be needed but in case of hypothetical desync
+
+        def msg_check(message):  # Wait for message meeting this criteria to handle as a response
+            return message.author == ctx.author and message.channel == ctx.channel
+
+        await ctx.send("Are you sure you'd like to rebuild best_enchants? (y/n)")
+
+        # wait_for returns first event that satisfies check (message event in this case)
+        try:
+            response = await self.bot.wait_for('message', check=msg_check, timeout=10)
+        except asyncio.TimeoutError:
+            await ctx.send('Timed out')
+            return
+
+        content = response.content.lower()
+        if content in {'y', 'yes'}:
+            async with self.bot.pg_pool.acquire() as con:
+                async with con.transaction():
+                    old = await con.fetch('SELECT name, best_level, best_rate FROM best_enchants ORDER BY name')
+                    await rebuild_best_enchants(con)
+                    new = await con.fetch('SELECT name, best_level, best_rate FROM best_enchants ORDER BY name')
+            out = diff_best_enchants(old, new)
+            await ctx.send(f'Rebuild completed.\n'
+                           f'{out}')
+        elif content in {'n', 'no'}:
+            await ctx.send('Cancelled')
+        else:
+            await ctx.send('Invalid response. Cancelling')
 
 async def setup(bot):
     await bot.add_cog(Villagers(bot))

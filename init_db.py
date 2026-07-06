@@ -13,17 +13,15 @@ TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS trades (
     id serial PRIMARY KEY,
     villager_name text NOT NULL,
-    slot smallint NOT NULL,
     enchant_name text NOT NULL,
     level smallint NOT NULL,
-    cost smallint NOT NULL,
-    UNIQUE (villager_name, slot)
+    cost smallint NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS best_enchants (
     name text PRIMARY KEY,
-    best_level integer REFERENCES trades(id),
-    best_rate integer REFERENCES trades(id)
+    best_level integer REFERENCES trades(id) NOT NULL,
+    best_rate integer REFERENCES trades(id) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS priority (

@@ -2,4 +2,4 @@ __pycache__/
 venv/
 .idea/
 .env
-data.json
+cogs/testing.py

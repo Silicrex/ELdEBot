@@ -58,11 +58,6 @@ class BotUtility(commands.Cog):
         duration = (end - start) * 1000
         await message.edit(content=f'Pong! {duration:.2f}ms')
 
-    @commands.command()
-    async def test(self, ctx, *, text):
-        x = [text]
-        print(x)
-
 
 async def setup(bot):
     await bot.add_cog(BotUtility(bot))
