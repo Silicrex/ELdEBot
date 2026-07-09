@@ -25,19 +25,25 @@ class Villagers(commands.Cog):
     async def help(self, ctx):
         await ctx.send('**Commands:**\n'
                        '**\- list**\n'
-                       '   Lists all enchants. Alias: l, enchants\n'
+                       '   Lists all enchants.\n'
+                       '   Alias: l, enchants\n'
                        '**\- find <enchant>**\n'
-                       '   Find the best trade for an enchant. Alias: f\n'
+                       '   Find the best trade for an enchant.\n'
+                       '   Alias: f\n'
                        '**\- findlist <text>**\n'
-                       '   Find the best trade for the enchants whose name contains the text. Alias: fl\n'
+                       '   Find the best trade for the enchants whose name contains the text.\n'
+                       '   Alias: fl\n'
                        '**\- findall <enchant>**\n'
-                       '   Finds all villagers who have a given enchant. Alias: fa\n'
+                       '   Finds all villagers who have a given enchant.\n'
+                       '   Alias: fa\n'
                        '**\- check <cost> <enchant>, ..**\n'
-                       '   Simulate the value of adding an enchant. Alias: c\n'
+                       '   Simulate the value of adding an enchant.\n'
+                       '   Alias: c\n'
                        '**\- villagers**\n'
                        '   List all villagers.\n'
                        '**\- villager <villager_name>**\n'
-                       '   Show the information of a villager. Alias: v\n'
+                       '   Show the information of a villager.\n'
+                       '   Alias: v\n'
                        '**\- add <villager name>, <cost1 enchant1>, ...**\n'
                        '   Add a villager\n'
                        '**\- update <villager name>, <cost1 enchant1>, ...**\n'
@@ -47,7 +53,8 @@ class Villagers(commands.Cog):
                        '**\- remove <villager name>**\n'
                        '   Delete a villager\n'
                        '**\- priority (add/remove <enchant_name> | list | clear)**\n'
-                       '   Manage the priority list. No args shows which you have already. Alias: p\n'
+                       '   Manage the priority list. No args shows which you have already.\n'
+                       '   Alias: p\n'
                        '**\- scale cost:level new_level**\n'
                        '   Show the cost combining to a higher-level enchant\n'
                        '**\- level <level>**\n'
@@ -665,16 +672,16 @@ class Villagers(commands.Cog):
     async def level(self, ctx, value: float):
         # Takes a level, converts it to XP and XP tomes
         xp = level_to_xp(value)
-        await ctx.send(f'Level {value} is equal to {xp:.2f} XP\n'
-                       f'This is equal to {xp/level_to_xp(30):.1f} XP tome(s)')
+        await ctx.send(f'**Level {value}** is equal to **{xp:.2f} XP**\n'
+                       f'This is equal to **{xp/level_to_xp(30):.1f} XP tome(s)**')
 
     @commands.command()
     @commands.cooldown(rate=1, per=1, type=commands.BucketType.guild)
     async def xp(self, ctx, value: float):
         # Takes XP, converts it to level and XP tomes
         level = xp_to_level(value)
-        await ctx.send(f'{value} XP is equal to level {level:.1f}\n'
-                       f'This is equal to {value / level_to_xp(30):.1f} XP tome(s)')
+        await ctx.send(f'**{value} XP** is equal to **level {level:.1f}**\n'
+                       f'This is equal to **{value / level_to_xp(30):.1f} XP tome(s)**')
 
 
     @commands.command()
