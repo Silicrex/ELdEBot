@@ -1,8 +1,9 @@
 import string
+from math import sqrt
 
 EMS = '<:emerald:1156624279857811457>'
 EBOOK = '<:ebook:1158537467482341487>'
-VALID_CHARS = set(string.ascii_letters + string.digits + " '.:")
+VALID_CHARS = set(string.ascii_letters + string.digits + " '.:-")
 
 
 async def add_enchants(con, villager_name, enchant_list):
@@ -390,6 +391,23 @@ def diff_best_enchants(old, new):
             f"New enchants ({len(new_enchants)}): {', '.join(new_enchants)}\n"
             f"Changed enchants ({len(changed_enchants)}): {', '.join(changed_enchants)}")
 
+
+def level_to_xp(level):
+    if level <= 16:
+        return level ** 2 + 6 * level
+    elif level <= 31:
+        return 2.5 * level ** 2 - 40.5 * level + 360
+    else:  # level ≥ 32
+        return 4.5 * level ** 2 - 162.5 * level + 2220
+
+
+def xp_to_level(xp):
+    if xp <= 352:  # level 0-16
+        return sqrt(xp + 9) - 3
+    elif xp <= 1507:  # level 17-31
+        return 81/10 + sqrt(2/5 * (xp - 7839/40))
+    else:  # xp > 1507, level 32+
+        return 325/18 + sqrt(2/9 * (xp - 54215/72))
 
 
 def sorted_dict(dictionary):

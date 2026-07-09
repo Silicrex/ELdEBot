@@ -5,7 +5,7 @@ from cogs.villagers.helpers import create_enchant_data_string, create_villager_d
     create_enchant_list, get_enchant_list, get_villager_list, get_villager_data, match_enchant, match_villager,\
     check_best_level, check_best_rate, check_villager, get_priority_list, get_enchant_data,\
     get_enchant_best_level, get_enchant_best_rate, valid_name, EMS, EBOOK, rebuild_best_enchants, diff_best_enchants,\
-    get_redundant_villagers, get_villager_enchants, add_enchants
+    get_redundant_villagers, get_villager_enchants, add_enchants, xp_to_level, level_to_xp
 from cogs.villagers.views import Pages, EnchantPages, VillagerPages, PageView
 from cogs.villagers import enchanting
 
@@ -24,18 +24,36 @@ class Villagers(commands.Cog):
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
     async def help(self, ctx):
         await ctx.send('**Commands:**\n'
-                       '\- list\n'
-                       '\- find <enchant>\n'
-                       '\- findlist <text>\n'
-                       '\- check <cost> <enchant>, ..\n'
-                       '\- villagers\n'
-                       '\- villager <villager_name>\n'
-                       '\- add <villager name>, <cost1 enchant1>, ...\n'
-                       '\- update <villager name>, <cost1 enchant1>, ...\n'
-                       '\- rename <villager name>, <new villager name>\n'
-                       '\- remove <villager name>\n'
-                       '\- priority (add/remove <enchant_name>)\n'
-                       '\- scale cost:level new_level')
+                       '**\- list**\n'
+                       '   Lists all enchants. Alias: l, enchants\n'
+                       '**\- find <enchant>**\n'
+                       '   Find the best trade for an enchant. Alias: f\n'
+                       '**\- findlist <text>**\n'
+                       '   Find the best trade for the enchants whose name contains the text. Alias: fl\n'
+                       '**\- findall <enchant>**\n'
+                       '   Finds all villagers who have a given enchant. Alias: fa\n'
+                       '**\- check <cost> <enchant>, ..**\n'
+                       '   Simulate the value of adding an enchant. Alias: c\n'
+                       '**\- villagers**\n'
+                       '   List all villagers.\n'
+                       '**\- villager <villager_name>**\n'
+                       '   Show the information of a villager. Alias: v\n'
+                       '**\- add <villager name>, <cost1 enchant1>, ...**\n'
+                       '   Add a villager\n'
+                       '**\- update <villager name>, <cost1 enchant1>, ...**\n'
+                       '   Add a new trade to a villager\n'
+                       '**\- rename <villager name>, <new villager name>**\n'
+                       '   Rename a villager\n'
+                       '**\- remove <villager name>**\n'
+                       '   Delete a villager\n'
+                       '**\- priority (add/remove <enchant_name> | list | clear)**\n'
+                       '   Manage the priority list. No args shows which you have already. Alias: p\n'
+                       '**\- scale cost:level new_level**\n'
+                       '   Show the cost combining to a higher-level enchant\n'
+                       '**\- level <level>**\n'
+                       '   Takes level, converts it to total XP and XP tomes\n'
+                       '**\- xp <xp>**\n'
+                       '   Takes XP, converts it to total level and XP tomes')
 
     @commands.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
@@ -208,10 +226,11 @@ class Villagers(commands.Cog):
         out.append(f'Successfully deleted **{villager_name}**\n')
         await ctx.send(''.join(out))
 
-    @commands.command(aliases=['enchants'])
+    @commands.command(aliases=['enchants', 'l'])
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
     async def list(self, ctx):
         # ex: list
+        # lists all enchants and what villager they are associated with
         result = await self.bot.pg_pool.fetch("""SELECT e.name AS enchant_name,
                                                  e.best_level = e.best_rate AS same_trade,
                                                  level_trade.villager_name AS best_level_villager, 
@@ -246,6 +265,7 @@ class Villagers(commands.Cog):
     @commands.cooldown(rate=1, per=1, type=commands.BucketType.guild)
     async def find(self, ctx, *, text: str.lower):
         # ex: find ash destroyer
+        # finds best trades for enchant
         enchant_name = ' '.join(text.split())  # Sanitize whitespace
         if not enchant_name:  # Should be caught by missing arg anyways
             await ctx.send('Must provide enchant name, like `find ash destroyer`')
@@ -261,23 +281,23 @@ class Villagers(commands.Cog):
             result = await get_enchant_data(con, enchant_name)
         await ctx.send(create_enchant_data_string(result, enchant_name))
 
-    @commands.command(aliases=['fl', 'findl'])
+    @commands.command(aliases=['fl'])
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.guild)
     async def findlist(self, ctx, *, text: str.lower):
         # ex: findlist adv
         enchant_name = ' '.join(text.split())  # Sanitize whitespace
         async with self.bot.pg_pool.acquire() as con:
-            enchants = await get_enchant_list(con)
-            if not enchants:
+            enchant_list = await get_enchant_list(con)
+            if not enchant_list:
                 await ctx.send('There are no enchants')
                 return
-            enchant_list = []
-            if enchant_name in enchants:
-                enchant_list.append(enchant_name)
-            for test_enchant_name in enchants:
+            matched_enchants = []
+            if enchant_name in enchant_list:
+                matched_enchants.append(enchant_name)
+            for test_enchant_name in enchant_list:
                 if test_enchant_name.startswith(enchant_name) or enchant_name in test_enchant_name:
-                    enchant_list.append(test_enchant_name)
-            if not enchant_list:
+                    matched_enchants.append(test_enchant_name)
+            if not matched_enchants:
                 await ctx.send('Nothing found')
                 return
             result = await self.bot.pg_pool.fetch("""SELECT e.name AS enchant_name,
@@ -292,7 +312,7 @@ class Villagers(commands.Cog):
                                                      LEFT JOIN trades AS level_trade ON e.best_level = level_trade.id
                                                      LEFT JOIN trades AS rate_trade ON e.best_rate = rate_trade.id
                                                      WHERE e.name = ANY($1)
-                                                     ORDER BY e.name""", enchant_list)
+                                                     ORDER BY e.name""", matched_enchants)
         enchants = {}
         for enchant in result:
             enchant_name = enchant['enchant_name']
@@ -308,7 +328,47 @@ class Villagers(commands.Cog):
         view.author = ctx.author
         view.message = await ctx.send(pages.get_current_page_text(), view=view)
 
-    @commands.command()
+    @commands.command(aliases=['fa'])
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.guild)
+    async def findall(self, ctx, *, text: str.lower):
+        # ex: findall flame
+        # Shows all trades containing a matched enchant regardless of bests
+        enchant_name = ' '.join(text.split())  # Sanitize whitespace
+        async with self.bot.pg_pool.acquire() as con:
+            enchant_list = await get_enchant_list(con)
+            if not enchant_list:
+                await ctx.send('There are no enchants')
+                return
+            if not (enchant_name := match_enchant(enchant_name, enchant_list)):
+                await ctx.send('Enchant not found')
+                return
+            trades = await con.fetch("""SELECT t.villager_name, t.enchant_name, t.level, t.cost, 
+                                        CASE WHEN t.id = e.best_level THEN TRUE ELSE FALSE END AS is_best_level, 
+                                        CASE WHEN t.id = e.best_rate THEN TRUE ELSE FALSE END AS is_best_rate 
+                                        FROM trades t 
+                                        LEFT JOIN best_enchants e ON t.enchant_name = e.name 
+                                        WHERE EXISTS (
+                                            SELECT 1 FROM trades t2 
+                                            WHERE t2.villager_name = t.villager_name AND t2.enchant_name = $1
+                                        )
+                                        ORDER BY t.villager_name, t.id""", enchant_name)
+        # Parse the data and organize it per-villager
+        villagers = {}
+        for trade in trades:
+            villager_name = trade['villager_name']
+            if villager_name not in villagers:
+                villagers.update({villager_name: []})
+            villagers[villager_name].append({'enchant_name': trade['enchant_name'], 'level': trade['level'],
+                                             'cost': trade['cost'], 'is_best_level': trade['is_best_level'],
+                                             'is_best_rate': trade['is_best_rate']})
+
+        # Send pages view
+        pages = VillagerPages(villagers, keys_per_page=10)
+        view = PageView(pages)
+        view.author = ctx.author
+        view.message = await ctx.send(pages.get_current_page_text(), view=view)
+
+    @commands.command(aliases=['v'])
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
     async def villager(self, ctx, *, text: str.lower):
         # ex: villager bob
@@ -327,7 +387,7 @@ class Villagers(commands.Cog):
             result = await get_villager_data(con, villager_name)
         await ctx.send(create_villager_data_string(result, villager_name))
 
-    @commands.command(aliases=['v'])
+    @commands.command()
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
     async def villagers(self, ctx):
         # ex: villagers
@@ -356,12 +416,15 @@ class Villagers(commands.Cog):
                                              'is_best_rate': trade['is_best_rate']})
 
         # Send pages view
-        pages = VillagerPages(villagers, redundant_villagers)
+        header_text = None
+        if redundant_villagers:
+            header_text = f"**[!]** Villagers with no bests: {', '.join(redundant_villagers)}"
+        pages = VillagerPages(villagers, keys_per_page=5, header_text=header_text)
         view = PageView(pages)
         view.author = ctx.author
         view.message = await ctx.send(pages.get_current_page_text(), view=view)
 
-    @commands.group(invoke_without_command=True, aliases=['p', 'prio'])
+    @commands.group(invoke_without_command=True, aliases=['p'])
     async def priority(self, ctx):
         # List of owned priority enchants with locations
         async with self.bot.pg_pool.acquire() as con:
@@ -383,7 +446,7 @@ class Villagers(commands.Cog):
                                                      WHERE e.name = ANY($1)
                                                      ORDER BY e.name""", priority_list)
         if not result:
-            await ctx.send('No priority enchants found')
+            await ctx.send('No owned priority enchants found')
             return
         enchants = {}
         for enchant in result:
@@ -395,7 +458,7 @@ class Villagers(commands.Cog):
                                             'best_rate_villager': enchant['best_rate_villager'],
                                             'best_rate_level': enchant['best_rate_level'],
                                             'best_rate_cost': enchant['best_rate_cost']}})
-        pages = EnchantPages(enchants, keys_per_page=20)
+        pages = EnchantPages(enchants, keys_per_page=20, header_text='Owned Priority Enchantments')
         view = PageView(pages)
         view.author = ctx.author
         view.message = await ctx.send(pages.get_current_page_text(), view=view)
@@ -481,7 +544,7 @@ class Villagers(commands.Cog):
             else:
                 await ctx.send('Invalid response. Cancelling')
 
-    @commands.command()
+    @commands.command(aliases=['c'])
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.guild)
     async def check(self, ctx, *, text: str.lower):
         # ex: check bob, 10 ash destroyer, 5 mending, 7 supreme sharpness 5
@@ -595,6 +658,24 @@ class Villagers(commands.Cog):
                 await ctx.send(await tag_func(con))
         else:
             await ctx.send("Invalid tag. Use 'enchant help' for help")
+
+
+    @commands.command()
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.guild)
+    async def level(self, ctx, value: float):
+        # Takes a level, converts it to XP and XP tomes
+        xp = level_to_xp(value)
+        await ctx.send(f'Level {value} is equal to {xp:.2f} XP\n'
+                       f'This is equal to {xp/level_to_xp(30):.1f} XP tome(s)')
+
+    @commands.command()
+    @commands.cooldown(rate=1, per=1, type=commands.BucketType.guild)
+    async def xp(self, ctx, value: float):
+        # Takes XP, converts it to level and XP tomes
+        level = xp_to_level(value)
+        await ctx.send(f'{value} XP is equal to level {level:.1f}\n'
+                       f'This is equal to {value / level_to_xp(30):.1f} XP tome(s)')
+
 
     @commands.command()
     @commands.is_owner()
