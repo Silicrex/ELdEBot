@@ -62,7 +62,7 @@ class Villagers(commands.Cog):
                        '   Alias: lvl\n'
                        '**\- xp <xp>**\n'
                        '   Takes XP, converts it to total level and XP tomes\n'
-                       '**- enchant (help | tag)**\n'
+                       '**\- enchant (help | tag)**\n'
                        '   Optimized enchant guides with villager locations built in')
 
     @commands.command()
@@ -651,7 +651,7 @@ class Villagers(commands.Cog):
 
     @commands.command()
     async def enchant(self, ctx, *, text: str.lower):
-        tags = ['helmet', 'chestplate', 'leggings', 'boots']
+        tags = ['helmet', 'chestplate', 'leggings', 'boots', 'longbow']
         if text == 'help':
             await ctx.send(f"This command outputs a guide on efficiently enchanting items and "
                            f"where to get the enchants from your villagers\n"

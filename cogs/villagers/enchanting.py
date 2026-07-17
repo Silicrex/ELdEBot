@@ -71,3 +71,20 @@ async def boots_tag(con):
             f"**[17]** Item + **<Light Weight 3 + Unbreaking 3 + Mending>**\n"
             f"**[18]** Item + **<Underwater Strider 3 + Double Jump>**\n\n"
             f"Notes: Heating assumes hyperthermia immunity")
+
+
+async def longbow_tag(con):
+    return (f"**Longbow Enchantment Guide**\n"
+            f"Total XP: 2802, Total Levels: 111\n"
+            f"(1 -> 2 -> 4 -> 3)\n\n"
+            f"**[4]** {await estring(con, 'Rune: Arrow Piercing 4')} + {await estring(con, 'Multishot 4')}\n"
+            f"**[4]** {await estring(con, 'Adept 3')} + {await estring(con, 'Infinity')}\n"
+            f"**[2]** {await estring(con, 'Unbreaking 3')} + {await estring(con, 'Range')}\n"
+            f"**[7]** **<Adept 3 + Infinity>** + **<Unbreaking 3 + Range>**\n"
+            f"**[4]** {await estring(con, 'Rapid Fire 2')} + {await estring(con, 'Advanced Mending')}\n"
+            f"**[5]** **<Rapid Fire 2 + Advanced Mending>** + {await estring(con, 'Supreme Flame')}\n"
+            f"**[20]** Item + {await estring(con, 'Advanced Power 5')}\n"
+            f"**[22]** Item + **<Rune: Arrow Piercing 4 + Multishot 4>**\n"
+            f"**[21]** Item + **<Adept 3 + Infinity + Unbreaking 3 + Range>**\n"
+            f"**[22]** Item + **<Rapid Fire 2 + Advanced Mending + Supreme Flame>**\n\n"
+            f"Notes: Can swap Multishot/Splitshot")
