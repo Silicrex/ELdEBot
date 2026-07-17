@@ -61,7 +61,9 @@ class Villagers(commands.Cog):
                        '   Takes level, converts it to total XP and XP tomes\n'
                        '   Alias: lvl\n'
                        '**\- xp <xp>**\n'
-                       '   Takes XP, converts it to total level and XP tomes')
+                       '   Takes XP, converts it to total level and XP tomes\n'
+                       '**- enchant (help | tag)**\n'
+                       '   Optimized enchant guides with villager locations built in')
 
     @commands.command()
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.guild)
@@ -649,17 +651,16 @@ class Villagers(commands.Cog):
 
     @commands.command()
     async def enchant(self, ctx, *, text: str.lower):
-        tags = ['helmet', 'chestplate', 'chestplate_noheating', 'chestplate_berserk', 'leggings', 'boots',
-                'boots_noheating', 'javelin']
+        tags = ['helmet', 'chestplate', 'leggings', 'boots']
         if text == 'help':
             await ctx.send(f"This command outputs a guide on efficiently enchanting items and "
                            f"where to get the enchants from your villagers\n"
                            f"Usage: **enchant <tag>**\n"
                            f"- Go in order top-to-bottom\n"
                            f"- Numbers in brackets [] represent level cost\n"
-                           f"- Shown villager goes by best level available, notes level if level is lower than needed\n"
-                           f"- 'DNH' = Do Not Have enchant\n"
-                           f"Enchant guide tags: {tags}")
+                           f"- Shown villager goes by best level available, notes level if owned level is lower\n"
+                           f"- Assumes everything starts with 0 anvil uses\n"
+                           f"Enchant guide tags: **{', '.join(tags)}**")
         elif text in tags:
             tag_func = getattr(enchanting, text + '_tag')
             async with self.bot.pg_pool.acquire() as con:
