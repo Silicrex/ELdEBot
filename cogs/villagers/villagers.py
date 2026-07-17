@@ -21,7 +21,7 @@ class Villagers(commands.Cog):
         print(f'{self.__class__.__name__} cog unloaded!')
 
     @commands.command()
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.guild)
     async def help(self, ctx):
         await ctx.send('**Commands:**\n'
                        '**\- list**\n'
@@ -64,7 +64,7 @@ class Villagers(commands.Cog):
                        '   Takes XP, converts it to total level and XP tomes')
 
     @commands.command()
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.guild)
     async def add(self, ctx, *, text: str.lower):
         # ex: add bob, 10 ash destroyer, 5 mending, 7 supreme sharpness 5
         # [name], [cost] [enchant_name] [enchant_level]
@@ -106,7 +106,7 @@ class Villagers(commands.Cog):
         await ctx.send(''.join(out))
 
     @commands.command()
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.guild)
     async def update(self, ctx, *, text: str.lower):
         # ex: update bob, 10 range, 7 fire aspect 2
         # [name], [cost] [enchant_name] [enchant_level]
@@ -145,7 +145,7 @@ class Villagers(commands.Cog):
         await ctx.send(''.join(out))
 
     @commands.command()
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.guild)
     async def rename(self, ctx, *, text: str.lower):
         # ex: rename bob, bob2
 
@@ -179,7 +179,7 @@ class Villagers(commands.Cog):
         await ctx.send(f'Successfully renamed **{villager_name}** to **{new_villager_name}**!')
 
     @commands.command()
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.guild)
     async def remove(self, ctx, *, text: str.lower):
         # ex: remove bob
         villager_name = ' '.join(text.split())  # Sanitize whitespace
@@ -235,7 +235,7 @@ class Villagers(commands.Cog):
         await ctx.send(''.join(out))
 
     @commands.command(aliases=['enchants', 'l'])
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.guild)
     async def list(self, ctx):
         # ex: list
         # lists all enchants and what villager they are associated with
@@ -371,13 +371,13 @@ class Villagers(commands.Cog):
                                              'is_best_rate': trade['is_best_rate']})
 
         # Send pages view
-        pages = VillagerPages(villagers, keys_per_page=10)
+        pages = VillagerPages(villagers, keys_per_page=10, header_text=f'Viewing: **{string.capwords(enchant_name)}**')
         view = PageView(pages)
         view.author = ctx.author
         view.message = await ctx.send(pages.get_current_page_text(), view=view)
 
     @commands.command(aliases=['v'])
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.guild)
     async def villager(self, ctx, *, text: str.lower):
         # ex: villager bob
         villager_name = ' '.join(text.split())  # Sanitize whitespace
@@ -396,7 +396,7 @@ class Villagers(commands.Cog):
         await ctx.send(create_villager_data_string(result, villager_name))
 
     @commands.command()
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
+    @commands.cooldown(rate=1, per=2, type=commands.BucketType.guild)
     async def villagers(self, ctx):
         # ex: villagers
 
