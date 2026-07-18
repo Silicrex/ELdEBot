@@ -665,7 +665,10 @@ class Villagers(commands.Cog):
             tag_func = getattr(enchanting, text + '_tag')
             async with self.bot.pg_pool.acquire() as con:
                 embed = await tag_func(con)
-            await ctx.send(embed=embed)
+            if isinstance(embed, list):  # Long one that has to be split in parts
+                await ctx.send(embeds=embed)
+            else:
+                await ctx.send(embed=embed)
         else:
             await ctx.send("Invalid tag. Use 'enchant help' for help")
 

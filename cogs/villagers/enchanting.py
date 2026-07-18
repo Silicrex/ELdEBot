@@ -43,7 +43,7 @@ async def chestplate_tag(con):
             f"**[20]** Item + {await estring(con, 'Strengthened Vitality 5')}\n"
             f"**[17]** Item + {await estring(con, 'Advanced Protection 4')}\n"
             f"**[15]** Item + {EBOOK}**<Rune: Revival 2 + Unbreaking 3>**\n"
-            f"**[3]** Item + {EBOOK}**<Advanced Mending + Heating>**\n\n"
+            f"**[13]** Item + {EBOOK}**<Advanced Mending + Heating>**\n\n"
             f"Notes: Heating assumes hyperthermia immunity")
     return embed
 
@@ -96,8 +96,8 @@ async def longbow_tag(con):
     return embed
 
 async def cursededge_tag(con):
-    embed = discord.Embed(color=0xcd3242, title='Cursed Edge Nunchaku Enchantment Guide')
-    embed.description = (f"Total XP: 15959, Total Levels: 420\n"
+    embed1 = discord.Embed(color=0xcd3242, title='Cursed Edge Nunchaku Enchantment Guide')
+    embed1.description = (f"Total XP: 15959, Total Levels: 420\n"
             f"(1 -> 2 -> 4 -> 4 -> 3, reset, 1 -> 2 -> 4 -> 4 -> 3)\n\n"
             f"**[10]** {await estring(con, 'Rune: Piercing Capabilities 4')} + {await estring(con, 'Advanced Sharpness 5')}\n"
             f"**[6]** {await estring(con, 'Subject P.E. 5')} + {await estring(con, 'Adept 3')}\n"
@@ -116,8 +116,9 @@ async def cursededge_tag(con):
             f"**[2]** {await estring(con, 'Luck Magnification 2')} + {await estring(con, 'True Strike')}\n"
             f"**[8]** {EBOOK}**<Cursed Edge 5 + Combo 3>** + {EBOOK}**<Luck Magnification 2 + True Strike>**\n"
             f"**[4]** {await estring(con, 'Fiery Edge 2')} + {await estring(con, 'Atomic Deconstructor 2')}\n"
-            f"**[5]** {EBOOK}**<Fiery Edge 2 + Atomic Deconstructor 2>** + {EBOOK}**<Unreasonable 2>**\n"
-            f"**[32]** Item + {await estring(con, 'Mortalitas 8')}\n"
+            f"**[5]** {EBOOK}**<Fiery Edge 2 + Atomic Deconstructor 2>** + {EBOOK}**<Unreasonable 2>**\n")
+    embed2 = discord.Embed(color=0xcd3242)
+    embed2.description = (f"**[32]** Item + {await estring(con, 'Mortalitas 8')}\n"
             f"**[28]** Item + {EBOOK}**<Rune: Piercing Capabilities 4 + Advanced Sharpness 5>**\n"
             f"**[31]** Item + {EBOOK}**<Subject PE 5 + Adept 3 + Smite 5 + Lifesteal 2>**\n"
             f"**[32]** Item + {EBOOK}**<Spell Breaker 5 + Counter Attack 3 + Vampirism 2 + Mending>**\n"
@@ -128,4 +129,4 @@ async def cursededge_tag(con):
             f"**[31]** Item + {EBOOK}**<Sol's Blessing 5 + Unsheathing 2 + Purging Blade 5 + Parry>**\n"
             f"**[32]** Item + {EBOOK}**<Cursed Edge 5 + Combo 3 + Luck Magnification 2 + True Strike>**\n"
             f"**[34]** Item + {EBOOK}**<Fiery Edge 2 + Atomic Deconstructor 2 + Unreasonable 2>**")
-    return embed
+    return [embed1, embed2]  # It was too long to send in one with all enchants owned due to emojis
