@@ -468,7 +468,7 @@ class Villagers(commands.Cog):
                                             'best_rate_villager': enchant['best_rate_villager'],
                                             'best_rate_level': enchant['best_rate_level'],
                                             'best_rate_cost': enchant['best_rate_cost']}})
-        pages = EnchantPages(enchants, keys_per_page=20, header_text='Owned Priority Enchantments')
+        pages = EnchantPages(enchants, keys_per_page=20, header_text='**Owned Priority Enchantments**')
         view = PageView(pages)
         view.author = ctx.author
         view.message = await ctx.send(pages.get_current_page_text(), view=view)
@@ -651,7 +651,7 @@ class Villagers(commands.Cog):
 
     @commands.command()
     async def enchant(self, ctx, *, text: str.lower):
-        tags = ['helmet', 'chestplate', 'leggings', 'boots', 'longbow']
+        tags = ['helmet', 'chestplate', 'leggings', 'boots', 'longbow', 'cursededge']
         if text == 'help':
             await ctx.send(f"This command outputs a guide on efficiently enchanting items and "
                            f"where to get the enchants from your villagers\n"
@@ -664,7 +664,8 @@ class Villagers(commands.Cog):
         elif text in tags:
             tag_func = getattr(enchanting, text + '_tag')
             async with self.bot.pg_pool.acquire() as con:
-                await ctx.send(await tag_func(con))
+                embed = await tag_func(con)
+            await ctx.send(embed=embed)
         else:
             await ctx.send("Invalid tag. Use 'enchant help' for help")
 

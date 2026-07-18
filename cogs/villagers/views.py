@@ -1,5 +1,5 @@
 import discord
-from .helpers import create_enchant_data_string, create_villager_data_string, check_villager
+from .helpers import create_enchant_data_string, create_villager_data_string
 
 
 def pluralize(s, n):

@@ -67,7 +67,7 @@ def create_enchant_data_string(record, enchant_name):
     best_level = record['best_level']
     best_rate_level = record['best_rate_level']
     best_rate_cost = record['best_rate_cost']
-    res = [f"**[{string.capwords(enchant_name)} {best_level}]** "
+    res = [f"{EBOOK}**[{string.capwords(enchant_name)} {best_level}]** "
            f"{record['best_level_cost']}{EMS} --> **{record['best_level_villager']}**"]
     if not same_trade:
         scaled_cost = int(get_rate(best_rate_level, best_rate_cost) * get_lvl_1(best_level))
@@ -82,7 +82,7 @@ def create_villager_data_string(records, villager_name):
     for trade in records:  # Will have a trade record per slot
         is_best_level = trade['is_best_level']
         is_best_rate = trade['is_best_rate']
-        enchant_text = f"**[{string.capwords(trade['enchant_name'])} {trade['level']}]** {trade['cost']}{EMS}"
+        enchant_text = f"{EBOOK}**[{string.capwords(trade['enchant_name'])} {trade['level']}]** {trade['cost']}{EMS}"
         best_text = ''
         if is_best_level and is_best_rate:
             best_text = ' (BEST LEVEL/RATE)'
@@ -99,7 +99,7 @@ def match_villager(villager_name, villagers):
         return villager_name
     for test_villager_name in villagers:
         if test_villager_name.startswith(villager_name):
-            return villager_name
+            return test_villager_name
     return False
 
 
